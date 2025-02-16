@@ -13,11 +13,11 @@ public class Country
     Country(final String countryName,
             final String capitalCityName)
     {
-        validateCountryName();
-        validateCapitalCityName();
-
         this.countryName = countryName;
         this.capitalCityName = capitalCityName;
+
+        validateCountryName();
+        validateCapitalCityName();
     }
 
     private void validateCountryName()
