@@ -1,15 +1,25 @@
 package ca.bcit.comp25222.termproject;
+
 /**
+ * Represents a country with its name, capital city, and optional facts.
+ * This class ensures that the country name and capital city name are
+ * properly validated upon creation.
  *
  * @author Braeden Duval
- *
  */
-public class Country
+class Country
 {
     private final String countryName;
     private final String capitalCityName;
     private String[] facts;
 
+    /**
+     * Constructs a Country object with the given name and capital city name.
+     * Ensures that both parameters are not null or empty.
+     *
+     * @param countryName       The name of the country.
+     * @param capitalCityName   The name of the capital city.
+     */
     Country(final String countryName,
             final String capitalCityName)
     {
@@ -20,6 +30,11 @@ public class Country
         validateCapitalCityName();
     }
 
+    /*
+     * Validates that the country name is not null or empty.
+     *
+     * @throws IllegalArgumentException if the country name is null or empty.
+     */
     private void validateCountryName()
     {
         if(countryName == null || countryName.isEmpty())
@@ -28,6 +43,11 @@ public class Country
         }
     }
 
+    /*
+     * Validates that the capital city name is not null or empty.
+     *
+     * @throws IllegalArgumentException if the capital city name is null or empty.
+     */
     private void validateCapitalCityName()
     {
         if(capitalCityName == null || capitalCityName.isEmpty())
@@ -36,22 +56,42 @@ public class Country
         }
     }
 
-    public void setFacts(final String[] facts)
+    /**
+     * Sets the facts related to the country.
+     *
+     * @param facts An array of facts about the country.
+     */
+    void setFacts(final String[] facts)
     {
         this.facts = facts;
     }
 
-    public String[] getFacts()
+    /**
+     * Retrieves the facts about the country.
+     *
+     * @return An array of facts about the country.
+     */
+    String[] getFacts()
     {
         return facts;
     }
 
-    public String getCountryName()
+    /**
+     * Retrieves the name of the country.
+     *
+     * @return The name of the country.
+     */
+    String getCountryName()
     {
         return countryName;
     }
 
-    public String getCapitalCityName()
+    /**
+     * Retrieves the name of the capital city of the country.
+     *
+     * @return The name of the capital city.
+     */
+    String getCapitalCityName()
     {
         return capitalCityName;
     }

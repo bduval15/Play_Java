@@ -1,5 +1,4 @@
 package ca.bcit.comp25222.termproject;
-
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -9,7 +8,15 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-public class Score
+/**
+ * Represents a score record for a game session, including statistics on correct
+ * and incorrect attempts and the date and time of play.
+ * This class provides functionality to calculate scores, store and retrieve
+ * scores from a file, and check for high scores.
+ *
+ * @author Braeden Duval
+ */
+class Score
 {
     private final LocalDateTime dateTimePlayed;
     private final int numGamesPlayed;
@@ -19,7 +26,16 @@ public class Score
 
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    public Score(
+    /**
+     * Constructs a Score object with a specified date and game statistics.
+     *
+     * @param dateTimePlayed            The date and time when the game was played.
+     * @param numGamesPlayed            The number of games played.
+     * @param numCorrectFirstAttempt    The number of first-attempt correct answers.
+     * @param numCorrectSecondAttempt   The number of second-attempt correct answers.
+     * @param numIncorrectTwoAttempts   The number of incorrect answers after two attempts.
+     */
+    Score(
             final LocalDateTime dateTimePlayed,
             final int numGamesPlayed,
             final int numCorrectFirstAttempt,
@@ -33,7 +49,15 @@ public class Score
         this.numIncorrectTwoAttempts = numIncorrectTwoAttempts;
     }
 
-    public Score(
+    /**
+     * Constructs a Score object using the current date and time.
+     *
+     * @param numGamesPlayed            The number of games played.
+     * @param numCorrectFirstAttempt    The number of first-attempt correct answers.
+     * @param numCorrectSecondAttempt   The number of second-attempt correct answers.
+     * @param numIncorrectTwoAttempts   The number of incorrect answers after two attempts.
+     */
+    Score(
             final int numGamesPlayed,
             final int numCorrectFirstAttempt,
             final int numCorrectSecondAttempt,
@@ -47,17 +71,39 @@ public class Score
 
     }
 
-    public int getScore()
+    /**
+     * Calculates the total score for the session.
+     *
+     * @return The total score, where first-attempt correct answers are worth
+     *         2 points and second-attempt correct answers are worth 1 point.
+     */
+    int getScore()
     {
-        return (numCorrectFirstAttempt * 2) + numCorrectSecondAttempt;
+        final int totalScore;
+        totalScore = (numCorrectFirstAttempt * 2) + numCorrectSecondAttempt;
+
+        return totalScore;
     }
 
-
-    public double getAverageScorePerGame()
+    /**
+     * Computes the average score per game in the session.
+     *
+     * @return The average score per game.
+     */
+    double getAverageScorePerGame()
     {
-        return (double) getScore() / numGamesPlayed;
+        final double avgScore;
+        avgScore = (double) getScore() / numGamesPlayed;
+
+        return avgScore;
     }
 
+    /**
+     * Returns a string representation of the score, including all relevant details.
+     *
+     * @return A formatted string containing the date, number of games,
+     *         correct and incorrect answers, and calculated scores.
+     */
     @Override
     public String toString()
     {
@@ -84,7 +130,14 @@ public class Score
         return gameInfo;
     }
 
-    public static void appendScoreToFile(
+    /**
+     * Appends a score record to a file.
+     *
+     * @param score         The score object to be written to the file.
+     * @param fileName      The name of the file where the score should be stored.
+     * @throws IOException  If an error occurs while writing to the file.
+     */
+    static void appendScoreToFile(
             final Score score,
             final String fileName)
             throws IOException
@@ -98,7 +151,14 @@ public class Score
         }
     }
 
-    public static List<Score> readScoresFromFile(
+    /**
+     * Reads and parses scores from a file into a list of Score objects.
+     *
+     * @param fileName The name of the file containing score records.
+     * @return A list of Score objects parsed from the file.
+     * @throws IOException If an error occurs while reading the file.
+     */
+    static List<Score> readScoresFromFile(
             final String fileName)
             throws IOException
     {
@@ -141,6 +201,13 @@ public class Score
         return scores;
     }
 
+    /*
+     * Parses a list of strings representing a score record into a Score object.
+     *
+     * @param record A list of strings representing a single score entry.
+     * @return A Score object parsed from the given record.
+     * @throws IllegalArgumentException If the format of the score record is invalid.
+     */
     private static Score parseScore(final List<String> record)
     {
         try
@@ -181,7 +248,13 @@ public class Score
         }
     }
 
-    public static void checkHighScore(Score currentScore)
+    /**
+     * Compares the current score against the highest recorded average score
+     * from a file and displays a message if a new high score is achieved.
+     *
+     * @param currentScore The current score to compare against the high score.
+     */
+    static void checkHighScore(Score currentScore)
     {
         try
         {

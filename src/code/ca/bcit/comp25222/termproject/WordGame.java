@@ -1,9 +1,18 @@
 package ca.bcit.comp25222.termproject;
-
 import java.io.*;
 import java.util.*;
 
-public class WordGame
+/**
+ * <p>A quiz-based word game that tests users on country names, capital cities,
+ * and country-related facts. The game tracks scores based on correct answers
+ * given on the first and second attempts and records statistics in a file.
+ * </p>
+ * Users can choose to play multiple rounds, and the game checks for high scores
+ * across sessions.
+ *
+ * @author Braeden Duval
+ */
+class WordGame
 {
     private static final int NUM_QUESTIONS_PER_GAME = 10;
     private static int totalGamesPlayed = 0;
@@ -11,6 +20,12 @@ public class WordGame
     private static int totalCorrectSecondAttempt = 0;
     private static int totalIncorrect = 0;
 
+    /*
+     * Prompts the user to play again and validates their response.
+     *
+     * @param scan The scanner object to read user input.
+     * @return {true} if the user wants to play again, {false} otherwise.
+     */
     private static boolean playAgain(final Scanner scan)
     {
         while (true)
@@ -34,6 +49,13 @@ public class WordGame
         }
     }
 
+    /**
+     * The main method that starts the game.
+     * It initializes the game, loads country data, handles game rounds,
+     * tracks user scores, and checks for high scores.
+     *
+     * @param args Command-line arguments (not used).
+     */
     public static void main(final String[] args)
     {
         final Scanner scan;
