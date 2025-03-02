@@ -1,19 +1,20 @@
 package ca.bcit.comp25222.termproject;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 
-public class WordGame {
+public class WordGame
+{
     private static final int NUM_QUESTIONS_PER_GAME = 10;
     private static int totalGamesPlayed = 0;
     private static int totalCorrectFirstAttempt = 0;
     private static int totalCorrectSecondAttempt = 0;
     private static int totalIncorrect = 0;
 
-    private static boolean playAgain(final Scanner scan) {
-        while (true) {
+    private static boolean playAgain(final Scanner scan)
+    {
+        while (true)
+        {
             System.out.println("Would you like to play again? (Yes/No)");
 
             final String input;
@@ -21,9 +22,13 @@ public class WordGame {
 
             if (input.equalsIgnoreCase("Yes")) {
                 return true;
-            } else if (input.equalsIgnoreCase("No")) {
+            }
+            else if (input.equalsIgnoreCase("No"))
+            {
                 return false;
-            } else {
+            }
+            else
+            {
                 System.out.println("Invalid input. Please type 'Yes' or 'No'");
             }
         }
@@ -48,7 +53,7 @@ public class WordGame {
         final List<String> countryKeys;
         countryKeys = new ArrayList<>(countryMap.keySet());
 
-        Random rand;
+        final Random rand;
         rand = new Random();
 
         boolean playAgain = true;
@@ -62,7 +67,8 @@ public class WordGame {
             int incorrect = 0;
             System.out.println("Starting a new game!\n");
 
-            for (int i = 1; i <= NUM_QUESTIONS_PER_GAME; i++) {
+            for (int i = 1; i <= NUM_QUESTIONS_PER_GAME; i++)
+            {
                 final int questionType;
                 questionType = rand.nextInt(3);
 
@@ -75,37 +81,47 @@ public class WordGame {
                 boolean answerCorrect = false;
                 String userAnswer = "";
 
-                if (questionType == 0) {
+                if (questionType == 0)
+                {
                     System.out.printf("Question %d: What country has the capital city %s?%n",
                             i, country.getCapitalCityName());
 
                     userAnswer = scan.nextLine();
 
-                    if (userAnswer.equalsIgnoreCase(country.getCountryName())) {
+                    if (userAnswer.equalsIgnoreCase(country.getCountryName()))
+                    {
                         System.out.println("Correct!");
                         correctFirstAttempt++;
                         answerCorrect = true;
                     }
-                } else if (questionType == 1) {
+                }
+                else if (questionType == 1)
+                {
                     System.out.printf("Question %d: What is the capital city of %s?%n",
                             i, country.getCountryName());
 
                     userAnswer = scan.nextLine();
 
-                    if (userAnswer.equalsIgnoreCase(country.getCapitalCityName())) {
+                    if (userAnswer.equalsIgnoreCase(country.getCapitalCityName()))
+                    {
                         System.out.println("Correct!");
                         correctFirstAttempt++;
                         answerCorrect = true;
                     }
                 } else {
-                    String[] facts;
+
+                    final String[] facts;
                     facts = country.getFacts();
-                    if (facts.length == 0) {
+
+                    if (facts.length == 0)
+                    {
                         System.out.printf("Question %d: What country has the capital city %s?%n",
                                 i, country.getCapitalCityName());
 
-                    } else {
-                        String fact;
+                    }
+                    else
+                    {
+                        final String fact;
                         fact = facts[rand.nextInt(facts.length)];
                         System.out.printf("Question %d: Which country best describes the following fact:%n\"%s\"%n",
                                 i, fact);
@@ -113,28 +129,36 @@ public class WordGame {
                     }
 
                     userAnswer = scan.nextLine();
-                    if (userAnswer.equalsIgnoreCase(country.getCountryName())) {
+
+                    if (userAnswer.equalsIgnoreCase(country.getCountryName()))
+                    {
                         System.out.println("Correct!");
                         correctFirstAttempt++;
                         answerCorrect = true;
                     }
                 }
 
-                if (!answerCorrect) {
+                if (!answerCorrect)
+                {
                     System.out.println("Incorrect! Please try again:");
                     userAnswer = scan.nextLine();
 
                     if ((questionType == 0 || questionType == 2) &&
-                            userAnswer.equalsIgnoreCase(country.getCountryName())) {
+                            userAnswer.equalsIgnoreCase(country.getCountryName()))
+                    {
                         System.out.println("Correct on second attempt");
                         correctSecondAttempt++;
 
-                    } else if (questionType == 1 &&
-                            userAnswer.equalsIgnoreCase(country.getCapitalCityName())) {
+                    }
+                    else if
+                    (questionType == 1 && userAnswer.equalsIgnoreCase(country.getCapitalCityName()))
+                    {
                         System.out.println("Correct on second attempt");
                         correctSecondAttempt++;
 
-                    } else {
+                    }
+                    else
+                    {
                         System.out.printf("Incorrect again. The correct answer was '%s'.%n",
                                 (questionType == 1 ? country.getCapitalCityName() : country.getCountryName()));
                         incorrect++;
@@ -154,7 +178,8 @@ public class WordGame {
             playAgain = playAgain(scan);
         }
 
-        Score currentScore = new Score(
+        final Score currentScore;
+        currentScore = new Score(
                 totalGamesPlayed,
                 totalCorrectFirstAttempt,
                 totalCorrectSecondAttempt,
@@ -170,25 +195,5 @@ public class WordGame {
         Score.checkHighScore(currentScore);
 
         scan.close();
-    }
-
-    public static int getTotalIncorrect()
-    {
-        return totalIncorrect;
-    }
-
-    public static int getTotalCorrectSecondAttempt()
-    {
-        return totalCorrectSecondAttempt;
-    }
-
-    public static int getTotalCorrectFirstAttempt()
-    {
-        return totalCorrectFirstAttempt;
-    }
-
-    public static int getTotalGamesPlayed()
-    {
-        return totalGamesPlayed;
     }
 }

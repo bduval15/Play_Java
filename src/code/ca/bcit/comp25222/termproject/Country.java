@@ -36,7 +36,7 @@ public class Country
         }
     }
 
-    public void setFacts(String[] facts)
+    public void setFacts(final String[] facts)
     {
         this.facts = facts;
     }

@@ -20,11 +20,11 @@ public class Score
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public Score(
-            LocalDateTime dateTimePlayed,
-            int numGamesPlayed,
-            int numCorrectFirstAttempt,
-            int numCorrectSecondAttempt,
-            int numIncorrectTwoAttempts)
+            final LocalDateTime dateTimePlayed,
+            final int numGamesPlayed,
+            final int numCorrectFirstAttempt,
+            final int numCorrectSecondAttempt,
+            final int numIncorrectTwoAttempts)
     {
         this.dateTimePlayed = dateTimePlayed;
         this.numGamesPlayed = numGamesPlayed;
@@ -33,10 +33,11 @@ public class Score
         this.numIncorrectTwoAttempts = numIncorrectTwoAttempts;
     }
 
-    public Score(int numGamesPlayed,
-            int numCorrectFirstAttempt,
-            int numCorrectSecondAttempt,
-            int numIncorrectTwoAttempts)
+    public Score(
+            final int numGamesPlayed,
+            final int numCorrectFirstAttempt,
+            final int numCorrectSecondAttempt,
+            final int numIncorrectTwoAttempts)
     {
         this.dateTimePlayed = LocalDateTime.now();
         this.numGamesPlayed = numGamesPlayed;
@@ -57,20 +58,11 @@ public class Score
         return (double) getScore() / numGamesPlayed;
     }
 
-    public LocalDateTime getDateTimePlayed()
-    {
-        return dateTimePlayed;
-    }
-
-    public int getNumGamesPlayed()
-    {
-        return numGamesPlayed;
-    }
-
     @Override
     public String toString()
     {
-        StringBuilder sb = new StringBuilder();
+        final StringBuilder sb;
+        sb = new StringBuilder();
 
         sb.append("Date and Time: ").append(dateTimePlayed.format(formatter)).append("\n");
         sb.append("Games Played: ").append(numGamesPlayed).append("\n");
@@ -85,101 +77,153 @@ public class Score
             sb.append("Total Score: ").append(getScore()).append("\n");
             sb.append("Average Score Per Game: ").append(String.format("%.2f", getAverageScorePerGame())).append("\n");
         }
-        return sb.toString();
+
+        final String gameInfo;
+        gameInfo = sb.toString();
+
+        return gameInfo;
     }
 
-    public static void appendScoreToFile(Score score, String fileName) throws IOException
+    public static void appendScoreToFile(
+            final Score score,
+            final String fileName)
+            throws IOException
     {
-        try (FileWriter fw = new FileWriter(fileName, true);
+        try (FileWriter     fw = new FileWriter(fileName, true);
              BufferedWriter bw = new BufferedWriter(fw);
-             PrintWriter pw = new PrintWriter(bw)) {
+             PrintWriter    pw = new PrintWriter(bw))
+        {
             pw.println(score.toString());
             pw.println();
         }
     }
 
-    public static List<Score> readScoresFromFile(String fileName) throws IOException
+    public static List<Score> readScoresFromFile(
+            final String fileName)
+            throws IOException
     {
-        List<Score> scores = new ArrayList<>();
-        List<String> lines = Files.readAllLines(Paths.get(fileName));
 
-        List<String> record = new ArrayList<>();
+        final List<Score> scores;
+        scores = new ArrayList<>();
+
+        final List<String> lines;
+        lines = Files.readAllLines(Paths.get(fileName));
+
+        final List<String> record;
+        record = new ArrayList<>();
+
         for (String line : lines)
         {
             if (line.trim().isEmpty())
             {
                 if (!record.isEmpty())
                 {
-                    Score s = parseScore(record);
-                    if (s != null)
-                    {
-                        scores.add(s);
-                    }
+                    final Score s;
+                    s = parseScore(record);
+
+                    scores.add(s);
+
                     record.clear();
                 }
-            } else
+            }
+            else
             {
                 record.add(line);
             }
         }
         if (!record.isEmpty())
         {
-            Score s = parseScore(record);
-            if (s != null)
-            {
-                scores.add(s);
-            }
-        }
+            final Score s;
+            s = parseScore(record);
 
+            scores.add(s);
+        }
         return scores;
     }
 
-    private static Score parseScore(List<String> record)
+    private static Score parseScore(final List<String> record)
     {
         try
         {
-            String dateLine = record.get(0);
-            String gamesLine = record.get(1);
-            String firstLine = record.get(2);
-            String secondLine = record.get(3);
-            String incorrectLine = record.get(4);
+            final String dateLine;
+            final String gamesLine;
+            final String firstLine;
+            final String secondLine;
+            final String incorrectLine;
+            final String dateString;
+            final LocalDateTime dateTime;
 
-            String dateString = dateLine.substring("Date and Time:".length()).trim();
-            LocalDateTime dateTime = LocalDateTime.parse(dateString, formatter);
-            int games = Integer.parseInt(gamesLine.substring("Games Played:".length()).trim());
-            int first = Integer.parseInt(firstLine.substring("Correct First Attempts:".length()).trim());
-            int second = Integer.parseInt(secondLine.substring("Correct Second Attempts:".length()).trim());
-            int incorrect = Integer.parseInt(incorrectLine.substring("Incorrect Attempts:".length()).trim());
+            dateLine = record.get(0);
+            gamesLine = record.get(1);
+            firstLine = record.get(2);
+            secondLine = record.get(3);
+            incorrectLine = record.get(4);
+            dateString = dateLine.substring("Date and Time:".length()).trim();
+            dateTime = LocalDateTime.parse(dateString, formatter);
 
-            return new Score(dateTime, games, first, second, incorrect);
-        } catch (Exception e)
+            final int games;
+            final int first;
+            final int second;
+            final int incorrect;
+
+            games = Integer.parseInt(gamesLine.substring("Games Played:".length()).trim());
+            first = Integer.parseInt(firstLine.substring("Correct First Attempts:".length()).trim());
+            second = Integer.parseInt(secondLine.substring("Correct Second Attempts:".length()).trim());
+            incorrect = Integer.parseInt(incorrectLine.substring("Incorrect Attempts:".length()).trim());
+
+            final Score score;
+            score = new Score(dateTime, games, first, second, incorrect);
+            return score;
+
+        } catch (NumberFormatException e)
         {
-            return null;
+            throw new IllegalArgumentException("Invalid score format: ");
         }
     }
 
-    public static void checkHighScore(Score currentScore) {
-        try {
-            List<Score> scores = readScoresFromFile("score.txt");
-            Score highestScore = scores.stream()
+    public static void checkHighScore(Score currentScore)
+    {
+        try
+        {
+            final List<Score> scores;
+            final Score highestScore;
+            final double currentAvg;
+
+            scores = readScoresFromFile("score.txt");
+
+            highestScore = scores.stream()
                     .max(Comparator.comparingDouble(Score::getAverageScorePerGame))
                     .orElse(null);
 
-            double currentAvg = currentScore.getAverageScorePerGame();
-            if (highestScore == null) {
-                System.out.printf("CONGRATULATIONS! You are the new high score with an average of %.2f points per game; no previous record exists.%n", currentAvg);
-            } else {
-                double highestAvg = highestScore.getAverageScorePerGame();
-                String highScoreDateTime = highestScore.dateTimePlayed.toString();
-                if (currentAvg > highestAvg) {
-                    System.out.printf("CONGRATULATIONS! You are the new high score with an average of %.2f points per game; the previous record was %.2f points per game on %s.%n",
+            currentAvg = currentScore.getAverageScorePerGame();
+
+            if (highestScore == null)
+            {
+                System.out.printf("CONGRATULATIONS! You are the new high score with an average of " +
+                        "%.2f points per game; no previous record exists.%n", currentAvg);
+            }
+            else
+            {
+                final double highestAvg;
+                final String highScoreDateTime;
+
+                highestAvg = highestScore.getAverageScorePerGame();
+                highScoreDateTime = highestScore.dateTimePlayed.toString();
+
+                if (currentAvg > highestAvg)
+                {
+                    System.out.printf("CONGRATULATIONS! You are the new high score with an average of" +
+                                    " %.2f points per game; the previous record was %.2f points per game on %s.%n",
                             currentAvg, highestAvg, highScoreDateTime);
-                } else {
+                }
+                else
+                {
                     System.out.printf("You did not beat the high score of %.2f points per game from %s.%n",
                             highestAvg, highScoreDateTime);
                 }
             }
-        } catch (IOException e) {
+        } catch (IOException e)
+        {
             System.out.println("Error reading score file: " + e.getMessage());
         }
     }

@@ -59,25 +59,26 @@ public class World
                         continue;
                     }
 
-                    String[] countryCapitalSplit;
+                    final String[] countryCapitalSplit;
                     countryCapitalSplit = countryCapitalLine.split(":", 2);
 
-                    String countryName;
+                    final String countryName;
                     countryName = formatCountryName(countryCapitalSplit[0].trim());
 
-                    String capital;
+                    final String capital;
                     capital = countryCapitalSplit[1].trim();
 
-                    List<String> facts;
+                    final List<String> facts;
                     facts = new ArrayList<>();
 
                     for (int i = 0; i < 3 && scan.hasNextLine(); i++)
                     {
-                        String factLine = scan.nextLine().trim();
+                        String factLine;
+                        factLine = scan.nextLine().trim();
                         facts.add(factLine);
                     }
 
-                    Country country;
+                    final Country country;
                     country = new Country(countryName, capital);
 
                     country.setFacts(facts.toArray(new String[0]));
@@ -93,12 +94,17 @@ public class World
         return immutableCountryMap;
     }
 
-    private static String formatCountryName(String countryName)
+    private static String formatCountryName(final String countryName)
     {
         if (countryName.contains(","))
         {
-            String[] parts = countryName.split(",", 2);
-            return parts[1].trim() + " " + parts[0].trim();
+            final String[] parts;
+            parts = countryName.split(",", 2);
+
+            final String format;
+            format = parts[1].trim() + " " + parts[0].trim();
+
+            return format;
         }
         return countryName;
     }
