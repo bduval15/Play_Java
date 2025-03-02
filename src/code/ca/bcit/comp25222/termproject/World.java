@@ -3,25 +3,21 @@ package ca.bcit.comp25222.termproject;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.*;
-
 /**
  *
  * @author Braeden Duval
  *
  */
-
 public class World
 {
-
     private static final String filepath = "src/resources/";
 
-    public static Map<String, Country> buildCountries(String filepath)
+     static Map<String, Country> buildCountries()
             throws FileNotFoundException
     {
 
-        // new file setup to parse through multiple .txt files
         final File folder;
-        folder = new File(filepath);
+        folder = new File(World.filepath);
 
         final File[] files;
         files = folder.listFiles((dir, name) -> name.endsWith(".txt"));
@@ -29,100 +25,85 @@ public class World
         final Map<String, Country> countryMap;
         countryMap = new HashMap<>();
 
-        if (files != null)
+        if(files == null || files.length == 0)
         {
-            for (File file : files)
+            return Collections.emptyMap();
+        }
+
+        for (final File file : files)
+        {
+            final Scanner scan;
+            scan = new Scanner(file);
+
+            try (scan)
             {
-                final Scanner scan;
-                scan = new Scanner(file);
-
-                try (scan)
+                while (scan.hasNextLine())
                 {
-
-                    // Temp Containers for current country's data
-                    String currentCountryName = null;
-                    String currentCapital = null;
-
-                    // List to store current country facts
-                    List<String> currentFacts;
-                    currentFacts = new ArrayList<>();
-
+                    String countryCapitalLine = "";
                     while (scan.hasNextLine())
                     {
-                        final String line;
-                        line = scan.nextLine();
-
-                        if (line.isEmpty())
+                        countryCapitalLine = scan.nextLine().trim();
+                        if (!countryCapitalLine.isEmpty())
                         {
-                            continue;
-                        }
-
-                        //Checks if line has colon
-                        if (line.contains(":"))
-                        {
-                            // If country is already being made, make it final
-                            if (currentCountryName != null)
-                            {
-                                final Country country;
-                                country = new Country(currentCountryName, currentCapital);
-
-                                // Converts list of facts to an array and assigns it to the country object
-                                country.setFacts(currentFacts.toArray(new String[0]));
-
-                                //Put country in HashMap
-                                countryMap.put(currentCountryName, country);
-                            }
-
-                            //Splits the CountryName and Capital
-                            String[] splitNames;
-                            splitNames = line.split(":", 2);
-                            currentCountryName = splitNames[0];
-                            currentCapital = splitNames[1];
-
-                            // Resets facts list for new entries
-                            currentFacts = new ArrayList<>();
-                        } else
-                        {
-                            //if line does not contain a colon, add it to the facts
-                            currentFacts.add(line);
+                            break;
                         }
                     }
-                    // Processing the last Country in the .txt file
-                    if (currentCountryName != null)
+
+                    if (countryCapitalLine.isEmpty())
                     {
-                        final Country country;
-                        country = new Country(currentCountryName, currentCapital);
-                        country.setFacts(currentFacts.toArray(new String[0]));
-                        countryMap.put(currentCountryName, country);
+                        break;
                     }
-                }
 
+                    if (!countryCapitalLine.contains(":"))
+                    {
+                        continue;
+                    }
+
+                    String[] countryCapitalSplit;
+                    countryCapitalSplit = countryCapitalLine.split(":", 2);
+
+                    String countryName;
+                    countryName = formatCountryName(countryCapitalSplit[0].trim());
+
+                    String capital;
+                    capital = countryCapitalSplit[1].trim();
+
+                    List<String> facts;
+                    facts = new ArrayList<>();
+
+                    for (int i = 0; i < 3 && scan.hasNextLine(); i++)
+                    {
+                        String factLine = scan.nextLine().trim();
+                        facts.add(factLine);
+                    }
+
+                    Country country;
+                    country = new Country(countryName, capital);
+
+                    country.setFacts(facts.toArray(new String[0]));
+
+                    countryMap.put(countryName, country);
+                }
             }
         }
-        return countryMap;
+
+        final Map<String, Country> immutableCountryMap;
+        immutableCountryMap = Collections.unmodifiableMap(countryMap);
+
+        return immutableCountryMap;
     }
-    //HashMap test
-    public static void main(final String[] args)
+
+    private static String formatCountryName(String countryName)
     {
-        try
+        if (countryName.contains(","))
         {
-            Map<String, Country> countries = buildCountries(filepath);
-
-            for(Map.Entry<String, Country> entry : countries.entrySet())
-            {
-                Country country = entry.getValue();
-                System.out.println(country.getCountryName());
-                System.out.println(country.getCapitalCityName());
-                for(String fact : country.getFacts())
-                {
-                    System.out.println(fact);
-                }
-                System.out.println();
-            }
-        } catch (FileNotFoundException e)
-        {
-            System.out.println("File not found" + filepath);
+            String[] parts = countryName.split(",", 2);
+            return parts[1].trim() + " " + parts[0].trim();
         }
+        return countryName;
     }
-
 }
+
+
+
+
