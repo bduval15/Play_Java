@@ -15,6 +15,10 @@ import java.util.*;
 class WordGame
 {
     private static final int NUM_QUESTIONS_PER_GAME = 10;
+    private static final int FIRST_QUESTION_TYPE = 0;
+    private static final int SECOND_QUESTION_TYPE = 1;
+    private static final int THIRD_QUESTION_TYPE = 2;
+
     private static int totalGamesPlayed = 0;
     private static int totalCorrectFirstAttempt = 0;
     private static int totalCorrectSecondAttempt = 0;
@@ -103,7 +107,7 @@ class WordGame
                 boolean answerCorrect = false;
                 String userAnswer = "";
 
-                if (questionType == 0)
+                if (questionType == FIRST_QUESTION_TYPE)
                 {
                     System.out.printf("Question %d: What country has the capital city %s?%n",
                             i, country.getCapitalCityName());
@@ -112,12 +116,12 @@ class WordGame
 
                     if (userAnswer.equalsIgnoreCase(country.getCountryName()))
                     {
-                        System.out.println("Correct!");
+                        System.out.println("Correct!\n");
                         correctFirstAttempt++;
                         answerCorrect = true;
                     }
                 }
-                else if (questionType == 1)
+                else if (questionType == SECOND_QUESTION_TYPE)
                 {
                     System.out.printf("Question %d: What is the capital city of %s?%n",
                             i, country.getCountryName());
@@ -126,7 +130,7 @@ class WordGame
 
                     if (userAnswer.equalsIgnoreCase(country.getCapitalCityName()))
                     {
-                        System.out.println("Correct!");
+                        System.out.println("Correct!\n");
                         correctFirstAttempt++;
                         answerCorrect = true;
                     }
@@ -135,7 +139,7 @@ class WordGame
                     final String[] facts;
                     facts = country.getFacts();
 
-                    if (facts.length == 0)
+                    if (facts.length == FIRST_QUESTION_TYPE)
                     {
                         System.out.printf("Question %d: What country has the capital city %s?%n",
                                 i, country.getCapitalCityName());
@@ -154,7 +158,7 @@ class WordGame
 
                     if (userAnswer.equalsIgnoreCase(country.getCountryName()))
                     {
-                        System.out.println("Correct!");
+                        System.out.println("Correct!\n");
                         correctFirstAttempt++;
                         answerCorrect = true;
                     }
@@ -165,24 +169,26 @@ class WordGame
                     System.out.println("Incorrect! Please try again:");
                     userAnswer = scan.nextLine();
 
-                    if ((questionType == 0 || questionType == 2) &&
+                    if ((questionType == FIRST_QUESTION_TYPE || questionType == THIRD_QUESTION_TYPE) &&
                             userAnswer.equalsIgnoreCase(country.getCountryName()))
                     {
-                        System.out.println("Correct on second attempt");
+                        System.out.println("Correct on second attempt\n");
                         correctSecondAttempt++;
 
                     }
                     else if
-                    (questionType == 1 && userAnswer.equalsIgnoreCase(country.getCapitalCityName()))
+                    (questionType == FIRST_QUESTION_TYPE &&
+                                    userAnswer.equalsIgnoreCase(country.getCapitalCityName()))
                     {
-                        System.out.println("Correct on second attempt");
+                        System.out.println("Correct on second attempt\n");
                         correctSecondAttempt++;
 
                     }
                     else
                     {
-                        System.out.printf("Incorrect again. The correct answer was '%s'.%n",
-                                (questionType == 1 ? country.getCapitalCityName() : country.getCountryName()));
+                        System.out.printf("Incorrect again. The correct answer was '%s'.%n\n",
+                                (questionType == SECOND_QUESTION_TYPE
+                                        ? country.getCapitalCityName() : country.getCountryName()));
                         incorrect++;
                     }
                 }

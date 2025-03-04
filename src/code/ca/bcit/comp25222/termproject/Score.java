@@ -18,6 +18,11 @@ import java.util.List;
  */
 class Score
 {
+    private static final int GAMES_LINE_INDEX = 1;
+    private static final int FIRST_CORRECT_LINE_INDEX = 2;
+    private static final int SECOND_CORRECT_LINE_INDEX = 3;
+    private static final int INCORRECT_LINE_INDEX = 4;
+
     private final LocalDateTime dateTimePlayed;
     private final int numGamesPlayed;
     private final int numCorrectFirstAttempt;
@@ -80,7 +85,7 @@ class Score
     int getScore()
     {
         final int totalScore;
-        totalScore = (numCorrectFirstAttempt * 2) + numCorrectSecondAttempt;
+        totalScore = (numCorrectFirstAttempt * FIRST_CORRECT_LINE_INDEX) + numCorrectSecondAttempt;
 
         return totalScore;
     }
@@ -116,7 +121,7 @@ class Score
         sb.append("Correct Second Attempts: ").append(numCorrectSecondAttempt).append("\n");
         sb.append("Incorrect Attempts: ").append(numIncorrectTwoAttempts).append("\n");
 
-        if (numGamesPlayed == 1)
+        if (numGamesPlayed == GAMES_LINE_INDEX)
         {
             sb.append("Score: ").append(getScore()).append(" points\n");
         } else {
@@ -220,11 +225,11 @@ class Score
             final String dateString;
             final LocalDateTime dateTime;
 
-            dateLine = record.get(0);
-            gamesLine = record.get(1);
-            firstLine = record.get(2);
-            secondLine = record.get(3);
-            incorrectLine = record.get(4);
+            dateLine = record.getFirst();
+            gamesLine = record.get(GAMES_LINE_INDEX);
+            firstLine = record.get(FIRST_CORRECT_LINE_INDEX);
+            secondLine = record.get(SECOND_CORRECT_LINE_INDEX);
+            incorrectLine = record.get(INCORRECT_LINE_INDEX);
             dateString = dateLine.substring("Date and Time:".length()).trim();
             dateTime = LocalDateTime.parse(dateString, formatter);
 

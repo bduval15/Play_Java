@@ -15,6 +15,9 @@ import java.util.*;
  */
 class World
 {
+    private static final int TEXT_SPLIT_INDEX_START = 0;
+    private static final int TEXT_SPLIT_INDEX_END = 1;
+    private static final int TOTAL_FACTS = 3;
     private static final String filepath = "src/resources/";
 
      /**
@@ -40,7 +43,7 @@ class World
         final Map<String, Country> countryMap;
         countryMap = new HashMap<>();
 
-        if(files == null || files.length == 0)
+        if(files == null || files.length == TEXT_SPLIT_INDEX_START)
         {
             return Collections.emptyMap();
         }
@@ -78,15 +81,15 @@ class World
                     countryCapitalSplit = countryCapitalLine.split(":", 2);
 
                     final String countryName;
-                    countryName = formatCountryName(countryCapitalSplit[0].trim());
+                    countryName = formatCountryName(countryCapitalSplit[TEXT_SPLIT_INDEX_START].trim());
 
                     final String capital;
-                    capital = countryCapitalSplit[1].trim();
+                    capital = countryCapitalSplit[TEXT_SPLIT_INDEX_END].trim();
 
                     final List<String> facts;
                     facts = new ArrayList<>();
 
-                    for (int i = 0; i < 3 && scan.hasNextLine(); i++)
+                    for (int i = 0; i < TOTAL_FACTS && scan.hasNextLine(); i++)
                     {
                         String factLine;
                         factLine = scan.nextLine().trim();
@@ -96,7 +99,7 @@ class World
                     final Country country;
                     country = new Country(countryName, capital);
 
-                    country.setFacts(facts.toArray(new String[0]));
+                    country.setFacts(facts.toArray(new String[TEXT_SPLIT_INDEX_START]));
 
                     countryMap.put(countryName, country);
                 }
@@ -125,7 +128,8 @@ class World
             parts = countryName.split(",", 2);
 
             final String format;
-            format = parts[1].trim() + " " + parts[0].trim();
+            format = parts[TEXT_SPLIT_INDEX_END].trim() +
+                    " " + parts[TEXT_SPLIT_INDEX_START].trim();
 
             return format;
         }
