@@ -1,4 +1,4 @@
-package ca.bcit.comp25222.termproject;
+package ca.bcit.comp25222.termproject.WordGame;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -23,13 +23,15 @@ class Score
     private static final int SECOND_CORRECT_LINE_INDEX = 3;
     private static final int INCORRECT_LINE_INDEX = 4;
 
+    private static final DateTimeFormatter formatter =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
     private final LocalDateTime dateTimePlayed;
     private final int numGamesPlayed;
     private final int numCorrectFirstAttempt;
     private final int numCorrectSecondAttempt;
     private final int numIncorrectTwoAttempts;
 
-    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     /**
      * Constructs a Score object with a specified date and game statistics.
@@ -259,7 +261,8 @@ class Score
      *
      * @param currentScore The current score to compare against the high score.
      */
-    static void checkHighScore(Score currentScore)
+    static void checkHighScore(final Score currentScore,
+                               final String fileName)
     {
         try
         {
@@ -267,7 +270,7 @@ class Score
             final Score highestScore;
             final double currentAvg;
 
-            scores = readScoresFromFile("score.txt");
+            scores = readScoresFromFile(fileName);
 
             highestScore = scores.stream()
                     .max(Comparator.comparingDouble(Score::getAverageScorePerGame))

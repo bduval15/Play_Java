@@ -1,4 +1,5 @@
-package ca.bcit.comp25222.termproject;
+package ca.bcit.comp25222.termproject.WordGame;
+
 import java.io.*;
 import java.util.*;
 
@@ -12,17 +13,44 @@ import java.util.*;
  *
  * @author Braeden Duval
  */
-class WordGame
+public class WordGame
 {
     private static final int NUM_QUESTIONS_PER_GAME = 10;
     private static final int FIRST_QUESTION_TYPE = 0;
     private static final int SECOND_QUESTION_TYPE = 1;
     private static final int THIRD_QUESTION_TYPE = 2;
 
-    private static int totalGamesPlayed = 0;
-    private static int totalCorrectFirstAttempt = 0;
-    private static int totalCorrectSecondAttempt = 0;
-    private static int totalIncorrect = 0;
+    private final Scanner scan;
+    private final Random rand;
+    private Map<String, Country> countryMap;
+    private List<String> countryKeys;
+
+    private int totalGamesPlayed;
+    private int totalCorrectFirstAttempt;
+    private int totalCorrectSecondAttempt;
+    private int totalIncorrect;
+
+    /**
+     * Constructor to initialize the game state and resources
+     */
+    public WordGame()
+    {
+        totalGamesPlayed = 0;
+        totalCorrectFirstAttempt = 0;
+        totalCorrectSecondAttempt = 0;
+        totalIncorrect = 0;
+        this.scan = new Scanner(System.in);
+        this.rand = new Random();
+
+        try
+        {
+            this.countryMap = World.buildCountries();
+            this.countryKeys = new ArrayList<>(countryMap.keySet());
+        } catch (FileNotFoundException e)
+        {
+            System.out.println("File not found");
+        }
+    }
 
     /*
      * Prompts the user to play again and validates their response.
@@ -30,7 +58,7 @@ class WordGame
      * @param scan The scanner object to read user input.
      * @return {true} if the user wants to play again, {false} otherwise.
      */
-    private static boolean playAgain(final Scanner scan)
+    private boolean askPlayAgain()
     {
         while (true)
         {
@@ -54,33 +82,16 @@ class WordGame
     }
 
     /**
-     * The main method that starts the game.
+     * The method that starts the game.
      * It initializes the game, loads country data, handles game rounds,
      * tracks user scores, and checks for high scores.
      *
-     * @param args Command-line arguments (not used).
      */
-    public static void main(final String[] args)
+    public void playWordGame()
     {
-        final Scanner scan;
-        scan = new Scanner(System.in);
 
-        final Map<String, Country> countryMap;
-
-        try
-        {
-            countryMap = World.buildCountries();
-        } catch (FileNotFoundException e)
-        {
-            System.out.println("File not found");
-            return;
-        }
-
-        final List<String> countryKeys;
-        countryKeys = new ArrayList<>(countryMap.keySet());
-
-        final Random rand;
-        rand = new Random();
+        final String scoreFile;
+        scoreFile = System.getProperty("score.file", "score.txt");
 
         boolean playAgain = true;
 
@@ -203,7 +214,7 @@ class WordGame
             System.out.printf("- %d correct answers on the second attempt%n", correctSecondAttempt);
             System.out.printf("- %d incorrect answers on two attempts each%n", incorrect);
 
-            playAgain = playAgain(scan);
+            playAgain = askPlayAgain();
         }
 
         final Score currentScore;
@@ -215,13 +226,11 @@ class WordGame
 
         try
         {
-            Score.appendScoreToFile(currentScore, "score.txt");
+            Score.appendScoreToFile(currentScore, scoreFile);
         } catch (IOException e)
         {
             System.out.println("Error saving score: " + e.getMessage());
         }
-        Score.checkHighScore(currentScore);
-
-        scan.close();
+        Score.checkHighScore(currentScore, scoreFile);
     }
 }
