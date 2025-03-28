@@ -395,7 +395,7 @@ public final class RetroNumberGame
             msg = "Game Over!\n" + detail + "\n" + getScoreMessage();
             updateInfoLabel("Game Over! " + detail);
         }
-        showGameOverDialog("Game Over", msg);
+        showGameOverDialog(msg);
     }
 
     /**
@@ -506,15 +506,14 @@ public final class RetroNumberGame
     /**
      * Displays a game-over dialog with the specified title and message.
      *
-     * @param title   the title of the dialog.
      * @param message the message to display.
      */
     @Override
-    protected void showGameOverDialog(final String title, final String message)
+    protected void showGameOverDialog(final String message)
     {
         final Alert alert;
         alert = new Alert(AlertType.INFORMATION);
-        alert.setTitle(title);
+        alert.setTitle("Game Over");
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();

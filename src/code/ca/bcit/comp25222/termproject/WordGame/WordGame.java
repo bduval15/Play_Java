@@ -139,7 +139,7 @@ public final class WordGame
                 country         = countryMap.get(randomCountry);
 
                 boolean answerCorrect = false;
-                String userAnswer = "";
+                String userAnswer;
 
                 if (questionType == FIRST_QUESTION_TYPE)
                 {

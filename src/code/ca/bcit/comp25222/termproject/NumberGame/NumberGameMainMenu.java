@@ -48,7 +48,6 @@ public final class NumberGameMainMenu extends Application
     private static final int    vboxAxis            = 20;
     private static final int    sceneHeight         = 500;
     private static final int    sceneWidth          = 700;
-    ;
     /**
      * Initializes and displays the primary JavaFX stage for the Retro 20-Number Challenge game.
      * <p>
@@ -152,7 +151,16 @@ public final class NumberGameMainMenu extends Application
         Platform.runLater(() -> {
             try
             {
-                new NumberGameMainMenu().start(new Stage());
+                final Stage stage;
+                final Application newGame;
+
+                stage   = new Stage();
+                newGame = new NumberGameMainMenu();
+
+                newGame.start(stage);
+                stage.show();
+                stage.toFront();
+                stage.requestFocus();
             } catch (Exception e)
             {
                 System.out.println("Cannot launch game." + e.getMessage());
