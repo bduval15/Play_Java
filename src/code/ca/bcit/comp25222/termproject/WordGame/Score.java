@@ -1,4 +1,5 @@
 package ca.bcit.comp25222.termproject.WordGame;
+
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -16,31 +17,36 @@ import java.util.List;
  *
  * @author Braeden Duval
  */
-class Score
+final class Score
 {
-    private static final int GAMES_LINE_INDEX = 1;
-    private static final int FIRST_CORRECT_LINE_INDEX = 2;
-    private static final int SECOND_CORRECT_LINE_INDEX = 3;
-    private static final int INCORRECT_LINE_INDEX = 4;
+    private static final int GAMES_LINE_INDEX           = 1;
+    private static final int FIRST_CORRECT_LINE_INDEX   = 2;
+    private static final int SECOND_CORRECT_LINE_INDEX  = 3;
+    private static final int INCORRECT_LINE_INDEX       = 4;
 
-    private static final DateTimeFormatter formatter =
+    private static final String dateTimeText                = "Date and Time: ";
+    private static final String gamesPlayedText             = "Games Played: ";
+    private static final String correctFirstAttemptText     = "Correct First Attempts: ";
+    private static final String correctSecondAttemptText    = "Correct Second Attempts: ";
+    private static final String incorrectAttemptsText       = "Incorrect Attempts: ";
+
+    private static final DateTimeFormatter formatter    =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final LocalDateTime dateTimePlayed;
-    private final int numGamesPlayed;
-    private final int numCorrectFirstAttempt;
-    private final int numCorrectSecondAttempt;
-    private final int numIncorrectTwoAttempts;
-
+    private final int           numGamesPlayed;
+    private final int           numCorrectFirstAttempt;
+    private final int           numCorrectSecondAttempt;
+    private final int           numIncorrectTwoAttempts;
 
     /**
      * Constructs a Score object with a specified date and game statistics.
      *
-     * @param dateTimePlayed            The date and time when the game was played.
-     * @param numGamesPlayed            The number of games played.
-     * @param numCorrectFirstAttempt    The number of first-attempt correct answers.
-     * @param numCorrectSecondAttempt   The number of second-attempt correct answers.
-     * @param numIncorrectTwoAttempts   The number of incorrect answers after two attempts.
+     * @param dateTimePlayed          The date and time when the game was played.
+     * @param numGamesPlayed          The number of games played.
+     * @param numCorrectFirstAttempt  The number of first-attempt correct answers.
+     * @param numCorrectSecondAttempt The number of second-attempt correct answers.
+     * @param numIncorrectTwoAttempts The number of incorrect answers after two attempts.
      */
     Score(
             final LocalDateTime dateTimePlayed,
@@ -49,20 +55,20 @@ class Score
             final int numCorrectSecondAttempt,
             final int numIncorrectTwoAttempts)
     {
-        this.dateTimePlayed = dateTimePlayed;
-        this.numGamesPlayed = numGamesPlayed;
-        this.numCorrectFirstAttempt = numCorrectFirstAttempt;
-        this.numCorrectSecondAttempt = numCorrectSecondAttempt;
-        this.numIncorrectTwoAttempts = numIncorrectTwoAttempts;
+        this.dateTimePlayed             = dateTimePlayed;
+        this.numGamesPlayed             = numGamesPlayed;
+        this.numCorrectFirstAttempt     = numCorrectFirstAttempt;
+        this.numCorrectSecondAttempt    = numCorrectSecondAttempt;
+        this.numIncorrectTwoAttempts    = numIncorrectTwoAttempts;
     }
 
     /**
      * Constructs a Score object using the current date and time.
      *
-     * @param numGamesPlayed            The number of games played.
-     * @param numCorrectFirstAttempt    The number of first-attempt correct answers.
-     * @param numCorrectSecondAttempt   The number of second-attempt correct answers.
-     * @param numIncorrectTwoAttempts   The number of incorrect answers after two attempts.
+     * @param numGamesPlayed          The number of games played.
+     * @param numCorrectFirstAttempt  The number of first-attempt correct answers.
+     * @param numCorrectSecondAttempt The number of second-attempt correct answers.
+     * @param numIncorrectTwoAttempts The number of incorrect answers after two attempts.
      */
     Score(
             final int numGamesPlayed,
@@ -70,11 +76,11 @@ class Score
             final int numCorrectSecondAttempt,
             final int numIncorrectTwoAttempts)
     {
-        this.dateTimePlayed = LocalDateTime.now();
-        this.numGamesPlayed = numGamesPlayed;
-        this.numCorrectFirstAttempt = numCorrectFirstAttempt;
-        this.numCorrectSecondAttempt = numCorrectSecondAttempt;
-        this.numIncorrectTwoAttempts = numIncorrectTwoAttempts;
+        this.dateTimePlayed             = LocalDateTime.now();
+        this.numGamesPlayed             = numGamesPlayed;
+        this.numCorrectFirstAttempt     = numCorrectFirstAttempt;
+        this.numCorrectSecondAttempt    = numCorrectSecondAttempt;
+        this.numIncorrectTwoAttempts    = numIncorrectTwoAttempts;
 
     }
 
@@ -82,7 +88,7 @@ class Score
      * Calculates the total score for the session.
      *
      * @return The total score, where first-attempt correct answers are worth
-     *         2 points and second-attempt correct answers are worth 1 point.
+     * 2 points and second-attempt correct answers are worth 1 point.
      */
     int getScore()
     {
@@ -109,7 +115,7 @@ class Score
      * Returns a string representation of the score, including all relevant details.
      *
      * @return A formatted string containing the date, number of games,
-     *         correct and incorrect answers, and calculated scores.
+     * correct and incorrect answers, and calculated scores.
      */
     @Override
     public String toString()
@@ -117,18 +123,19 @@ class Score
         final StringBuilder sb;
         sb = new StringBuilder();
 
-        sb.append("Date and Time: ").append(dateTimePlayed.format(formatter)).append("\n");
-        sb.append("Games Played: ").append(numGamesPlayed).append("\n");
-        sb.append("Correct First Attempts: ").append(numCorrectFirstAttempt).append("\n");
-        sb.append("Correct Second Attempts: ").append(numCorrectSecondAttempt).append("\n");
-        sb.append("Incorrect Attempts: ").append(numIncorrectTwoAttempts).append("\n");
+        sb.append(dateTimeText).append(dateTimePlayed.format(formatter)).append("\n");
+        sb.append(gamesPlayedText).append(numGamesPlayed).append("\n");
+        sb.append(correctFirstAttemptText).append(numCorrectFirstAttempt).append("\n");
+        sb.append(correctSecondAttemptText).append(numCorrectSecondAttempt).append("\n");
+        sb.append(incorrectAttemptsText).append(numIncorrectTwoAttempts).append("\n");
 
         if (numGamesPlayed == GAMES_LINE_INDEX)
         {
-            sb.append("Score: ").append(getScore()).append(" points\n");
-        } else {
+            sb.append("Score: ").append(getScore()).append(" points");
+        } else
+        {
             sb.append("Total Score: ").append(getScore()).append("\n");
-            sb.append("Average Score Per Game: ").append(String.format("%.2f", getAverageScorePerGame())).append("\n");
+            sb.append("Average Score Per Game: ").append(String.format("%.2f", getAverageScorePerGame()));
         }
 
         final String gameInfo;
@@ -140,18 +147,18 @@ class Score
     /**
      * Appends a score record to a file.
      *
-     * @param score         The score object to be written to the file.
-     * @param fileName      The name of the file where the score should be stored.
-     * @throws IOException  If an error occurs while writing to the file.
+     * @param score    The score object to be written to the file.
+     * @param fileName The name of the file where the score should be stored.
+     * @throws IOException If an error occurs while writing to the file.
      */
     static void appendScoreToFile(
-            final Score score,
+            final Score  score,
             final String fileName)
             throws IOException
     {
-        try (FileWriter     fw = new FileWriter(fileName, true);
-             BufferedWriter bw = new BufferedWriter(fw);
-             PrintWriter    pw = new PrintWriter(bw))
+        try (final FileWriter     fw      = new FileWriter(fileName, true);
+             final BufferedWriter bw      = new BufferedWriter(fw);
+             final PrintWriter    pw      = new PrintWriter(bw))
         {
             pw.println(score.toString());
             pw.println();
@@ -171,13 +178,12 @@ class Score
     {
 
         final List<Score> scores;
-        scores = new ArrayList<>();
-
         final List<String> lines;
-        lines = Files.readAllLines(Paths.get(fileName));
-
         final List<String> record;
-        record = new ArrayList<>();
+
+        scores  = new ArrayList<>();
+        lines   = Files.readAllLines(Paths.get(fileName));
+        record  = new ArrayList<>();
 
         for (String line : lines)
         {
@@ -192,8 +198,7 @@ class Score
 
                     record.clear();
                 }
-            }
-            else
+            } else
             {
                 record.add(line);
             }
@@ -227,26 +232,26 @@ class Score
             final String dateString;
             final LocalDateTime dateTime;
 
-            dateLine = record.getFirst();
-            gamesLine = record.get(GAMES_LINE_INDEX);
-            firstLine = record.get(FIRST_CORRECT_LINE_INDEX);
-            secondLine = record.get(SECOND_CORRECT_LINE_INDEX);
-            incorrectLine = record.get(INCORRECT_LINE_INDEX);
-            dateString = dateLine.substring("Date and Time:".length()).trim();
-            dateTime = LocalDateTime.parse(dateString, formatter);
+            dateLine        = record.getFirst();
+            gamesLine       = record.get(GAMES_LINE_INDEX);
+            firstLine       = record.get(FIRST_CORRECT_LINE_INDEX);
+            secondLine      = record.get(SECOND_CORRECT_LINE_INDEX);
+            incorrectLine   = record.get(INCORRECT_LINE_INDEX);
+            dateString      = dateLine.substring(dateTimeText.length()).trim();
+            dateTime        = LocalDateTime.parse(dateString, formatter);
 
             final int games;
             final int first;
             final int second;
             final int incorrect;
-
-            games = Integer.parseInt(gamesLine.substring("Games Played:".length()).trim());
-            first = Integer.parseInt(firstLine.substring("Correct First Attempts:".length()).trim());
-            second = Integer.parseInt(secondLine.substring("Correct Second Attempts:".length()).trim());
-            incorrect = Integer.parseInt(incorrectLine.substring("Incorrect Attempts:".length()).trim());
-
             final Score score;
-            score = new Score(dateTime, games, first, second, incorrect);
+
+            games       = Integer.parseInt(gamesLine.substring(gamesPlayedText.length()).trim());
+            first       = Integer.parseInt(firstLine.substring(correctFirstAttemptText.length()).trim());
+            second      = Integer.parseInt(secondLine.substring(correctSecondAttemptText.length()).trim());
+            incorrect   = Integer.parseInt(incorrectLine.substring(incorrectAttemptsText.length()).trim());
+            score       = new Score(dateTime, games, first, second, incorrect);
+
             return score;
 
         } catch (NumberFormatException e)
@@ -281,26 +286,25 @@ class Score
             if (highestScore == null)
             {
                 System.out.printf("CONGRATULATIONS! You are the new high score with an average of " +
-                        "%.2f points per game; no previous record exists.%n", currentAvg);
-            }
-            else
+                                          "%.2f points per game; no previous record exists.%n", currentAvg);
+            } else
             {
                 final double highestAvg;
                 final String highScoreDateTime;
 
-                highestAvg = highestScore.getAverageScorePerGame();
-                highScoreDateTime = highestScore.dateTimePlayed.toString();
+                highestAvg          = highestScore.getAverageScorePerGame();
+                highScoreDateTime   = highestScore.dateTimePlayed.toString();
 
                 if (currentAvg > highestAvg)
                 {
                     System.out.printf("CONGRATULATIONS! You are the new high score with an average of" +
-                                    " %.2f points per game; the previous record was %.2f points per game on %s.%n",
-                            currentAvg, highestAvg, highScoreDateTime);
-                }
-                else
+                                      " %.2f points per game; " +
+                                      "the previous record was %.2f points per game on %s.%n",
+                                      currentAvg, highestAvg, highScoreDateTime);
+                } else
                 {
                     System.out.printf("You did not beat the high score of %.2f points per game from %s.%n",
-                            highestAvg, highScoreDateTime);
+                                      highestAvg, highScoreDateTime);
                 }
             }
         } catch (IOException e)

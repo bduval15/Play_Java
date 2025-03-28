@@ -6,28 +6,29 @@ package ca.bcit.comp25222.termproject.WordGame;
  * properly validated upon creation.
  *
  * @author Braeden Duval
+ * @version 1.0
  */
-class Country
+final class Country
 {
-    private final String countryName;
-    private final String capitalCityName;
-    private String[] facts;
+    private final   String      countryName;
+    private final   String      capitalCityName;
+    private         String[]    facts;
 
     /**
      * Constructs a Country object with the given name and capital city name.
      * Ensures that both parameters are not null or empty.
      *
-     * @param countryName       The name of the country.
-     * @param capitalCityName   The name of the capital city.
+     * @param countryName     The name of the country.
+     * @param capitalCityName The name of the capital city.
      */
     Country(final String countryName,
             final String capitalCityName)
     {
-        this.countryName = countryName;
-        this.capitalCityName = capitalCityName;
+        validateCountryName(countryName);
+        validateCapitalCityName(capitalCityName);
 
-        validateCountryName();
-        validateCapitalCityName();
+        this.countryName        = countryName;
+        this.capitalCityName    = capitalCityName;
     }
 
     /*
@@ -35,9 +36,9 @@ class Country
      *
      * @throws IllegalArgumentException if the country name is null or empty.
      */
-    private void validateCountryName()
+    private void validateCountryName(final String countryName)
     {
-        if(countryName == null || countryName.isEmpty())
+        if (countryName == null || countryName.isEmpty())
         {
             throw new IllegalArgumentException("Country name cannot be null or empty");
         }
@@ -48,9 +49,9 @@ class Country
      *
      * @throws IllegalArgumentException if the capital city name is null or empty.
      */
-    private void validateCapitalCityName()
+    private void validateCapitalCityName(final String capitalCityName)
     {
-        if(capitalCityName == null || capitalCityName.isEmpty())
+        if (capitalCityName == null || capitalCityName.isEmpty())
         {
             throw new IllegalArgumentException("Capital city name cannot be null or empty");
         }

@@ -37,9 +37,18 @@ import javafx.stage.Stage;
  *
  * @author Braeden Duval
  */
-public class NumberGameMainMenu extends Application
+public final class NumberGameMainMenu extends Application
 {
+    private static final String cssFile             = "/NumberGame.css";
+    private static final String buttonOverlayCSS    = "overlay-button";
+    private static final String gameTitle           = "Retro 20-Number Challenge";
+    private static final String exitButtonText      = "Exit";
+    private static final String startButtonText     = "Start Game";
 
+    private static final int    vboxAxis            = 20;
+    private static final int    sceneHeight         = 500;
+    private static final int    sceneWidth          = 700;
+    ;
     /**
      * Initializes and displays the primary JavaFX stage for the Retro 20-Number Challenge game.
      * <p>
@@ -57,20 +66,29 @@ public class NumberGameMainMenu extends Application
     @Override
     public void start(final Stage primaryStage)
     {
-        final RetroNumberGame game = new RetroNumberGame();
-        final StackPane gamePane = new StackPane(game.getRootPane());
-        final VBox overlayPane = buildOverlayPane(game, primaryStage);
-        final StackPane root = new StackPane();
+        final RetroNumberGame   game;
+        final StackPane         gamePane;
+        final VBox              overlayPane;
+        final StackPane         root;
+        final Scene             scene;
+
+        game        = new RetroNumberGame();
+        gamePane    = new StackPane(game.getRootPane());
+        overlayPane = buildOverlayPane(game, primaryStage);
+        root        = new StackPane();
+        scene       = new Scene(root, sceneWidth, sceneHeight);
+
         root.getChildren().addAll(gamePane, overlayPane);
 
-        final Scene scene = new Scene(root, 700, 500);
-        try {
-            scene.getStylesheets().add(getClass().getResource("/NumberGame.css").toExternalForm());
-        } catch (NullPointerException e) {
-            System.err.println("Error: NumberGame.css not found.");
+        try
+        {
+            scene.getStylesheets().add(getClass().getResource(cssFile).toExternalForm());
+        } catch (NullPointerException e)
+        {
+            System.err.printf("Error: %s not found.", cssFile);
         }
 
-        primaryStage.setTitle("Retro 20-Number Challenge");
+        primaryStage.setTitle(gameTitle);
         primaryStage.setScene(scene);
         primaryStage.show();
     }
@@ -86,28 +104,32 @@ public class NumberGameMainMenu extends Application
      * </ul>
      * </p>
      *
-     * @param game the {@link RetroNumberGame} instance controlling the game logic
+     * @param game         the {@link RetroNumberGame} instance controlling the game logic
      * @param primaryStage the stage to be closed when the exit button is pressed
      * @return a {@link VBox} containing the overlay UI elements
      */
     private VBox buildOverlayPane(final RetroNumberGame game, final Stage primaryStage)
     {
-        final VBox overlay = new VBox(20);
+        final VBox overlay;
+        overlay = new VBox(vboxAxis);
         overlay.setAlignment(Pos.CENTER);
         overlay.getStyleClass().add("overlay");
 
-        final Label titleLabel = new Label("Retro 20-Number Challenge");
+        final Label titleLabel;
+        titleLabel = new Label(gameTitle);
         titleLabel.getStyleClass().add("overlay-title");
 
-        final Button startButton = new Button("Start Game");
-        startButton.getStyleClass().add("overlay-button");
+        final Button startButton;
+        startButton = new Button(startButtonText);
+        startButton.getStyleClass().add(buttonOverlayCSS);
         startButton.setOnAction(e -> {
             overlay.setVisible(false);
             game.startNewGame();
         });
 
-        final Button exitButton = new Button("Exit");
-        exitButton.getStyleClass().add("overlay-button");
+        final Button exitButton;
+        exitButton = new Button(exitButtonText);
+        exitButton.getStyleClass().add(buttonOverlayCSS);
         exitButton.setOnAction(e -> primaryStage.close());
 
         overlay.getChildren().addAll(titleLabel, startButton, exitButton);
@@ -128,9 +150,12 @@ public class NumberGameMainMenu extends Application
     public static void launchGame()
     {
         Platform.runLater(() -> {
-            try {
+            try
+            {
                 new NumberGameMainMenu().start(new Stage());
-            } catch (Exception e) {
+            } catch (Exception e)
+            {
+                System.out.println("Cannot launch game." + e.getMessage());
                 e.printStackTrace();
             }
         });

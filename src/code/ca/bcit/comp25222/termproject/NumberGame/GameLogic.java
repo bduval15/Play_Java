@@ -28,9 +28,8 @@ public interface GameLogic
      * Attempts to place the next number at the specified index on the game board.
      *
      * @param index the index where the number should be placed.
-     * @return {@code true} if the number was successfully placed, {@code false} otherwise.
      */
-    boolean placeNumber(int index);
+    void placeNumber(int index);
 
     /**
      * Checks if the game is over by determining if there are no valid moves remaining.

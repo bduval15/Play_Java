@@ -13,17 +13,20 @@ import java.util.*;
  *
  * @author Braeden Duval
  */
-public class WordGame
+public final class WordGame
 {
-    private static final int NUM_QUESTIONS_PER_GAME = 10;
-    private static final int FIRST_QUESTION_TYPE = 0;
-    private static final int SECOND_QUESTION_TYPE = 1;
-    private static final int THIRD_QUESTION_TYPE = 2;
+    private static final int NUM_QUESTIONS_PER_GAME     = 10;
+    private static final int FIRST_QUESTION_TYPE        = 0;
+    private static final int SECOND_QUESTION_TYPE       = 1;
+    private static final int THIRD_QUESTION_TYPE        = 2;
 
-    private final Scanner scan;
-    private final Random rand;
-    private Map<String, Country> countryMap;
-    private List<String> countryKeys;
+    private static final String correctText             = "Correct!\n";
+    private static final String attemptTwoCorrectText   = "Correct on second attempt\n";
+
+    private final Scanner           scan;
+    private final Random            rand;
+    private Map<String, Country>    countryMap;
+    private List<String>            countryKeys;
 
     private int totalGamesPlayed;
     private int totalCorrectFirstAttempt;
@@ -35,17 +38,24 @@ public class WordGame
      */
     public WordGame()
     {
-        totalGamesPlayed = 0;
-        totalCorrectFirstAttempt = 0;
-        totalCorrectSecondAttempt = 0;
-        totalIncorrect = 0;
-        this.scan = new Scanner(System.in);
-        this.rand = new Random();
+        totalGamesPlayed            = 0;
+        totalCorrectFirstAttempt    = 0;
+        totalCorrectSecondAttempt   = 0;
+        totalIncorrect              = 0;
+
+        final Scanner scan;
+        final Random random;
+
+        scan    = new Scanner(System.in);
+        random  = new Random();
+
+        this.scan = scan;
+        this.rand = random;
 
         try
         {
-            this.countryMap = World.buildCountries();
-            this.countryKeys = new ArrayList<>(countryMap.keySet());
+            this.countryMap     = World.buildCountries();
+            this.countryKeys    = new ArrayList<>(countryMap.keySet());
         } catch (FileNotFoundException e)
         {
             System.out.println("File not found");
@@ -93,27 +103,40 @@ public class WordGame
         final String scoreFile;
         scoreFile = System.getProperty("score.file", "score.txt");
 
+        try {
+            File file = new File(scoreFile);
+            if (!file.exists()) {
+                if (file.createNewFile())
+                {
+                    System.out.println("File '" + scoreFile + "' created successfully.");
+                } else {
+                    System.out.println("Failed to create file '" + scoreFile + "'.");
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         boolean playAgain = true;
 
         while (playAgain)
         {
             totalGamesPlayed++;
 
-            int correctFirstAttempt = 0;
-            int correctSecondAttempt = 0;
-            int incorrect = 0;
+            int correctFirstAttempt     = 0;
+            int correctSecondAttempt    = 0;
+            int incorrect               = 0;
             System.out.println("Starting a new game!\n");
 
             for (int i = 1; i <= NUM_QUESTIONS_PER_GAME; i++)
             {
-                final int questionType;
-                questionType = rand.nextInt(3);
+                final int       questionType;
+                final String    randomCountry;
+                final Country   country;
 
-                final String randomCountry;
-                randomCountry = countryKeys.get(rand.nextInt(countryKeys.size()));
-
-                final Country country;
-                country = countryMap.get(randomCountry);
+                questionType    = rand.nextInt(3);
+                randomCountry   = countryKeys.get(rand.nextInt(countryKeys.size()));
+                country         = countryMap.get(randomCountry);
 
                 boolean answerCorrect = false;
                 String userAnswer = "";
@@ -127,7 +150,7 @@ public class WordGame
 
                     if (userAnswer.equalsIgnoreCase(country.getCountryName()))
                     {
-                        System.out.println("Correct!\n");
+                        System.out.println(correctText);
                         correctFirstAttempt++;
                         answerCorrect = true;
                     }
@@ -141,7 +164,7 @@ public class WordGame
 
                     if (userAnswer.equalsIgnoreCase(country.getCapitalCityName()))
                     {
-                        System.out.println("Correct!\n");
+                        System.out.println(correctText);
                         correctFirstAttempt++;
                         answerCorrect = true;
                     }
@@ -169,7 +192,7 @@ public class WordGame
 
                     if (userAnswer.equalsIgnoreCase(country.getCountryName()))
                     {
-                        System.out.println("Correct!\n");
+                        System.out.println(correctText);
                         correctFirstAttempt++;
                         answerCorrect = true;
                     }
@@ -183,7 +206,7 @@ public class WordGame
                     if ((questionType == FIRST_QUESTION_TYPE || questionType == THIRD_QUESTION_TYPE) &&
                             userAnswer.equalsIgnoreCase(country.getCountryName()))
                     {
-                        System.out.println("Correct on second attempt\n");
+                        System.out.println(attemptTwoCorrectText);
                         correctSecondAttempt++;
 
                     }
@@ -191,7 +214,7 @@ public class WordGame
                     (questionType == FIRST_QUESTION_TYPE &&
                                     userAnswer.equalsIgnoreCase(country.getCapitalCityName()))
                     {
-                        System.out.println("Correct on second attempt\n");
+                        System.out.println(attemptTwoCorrectText);
                         correctSecondAttempt++;
 
                     }
@@ -205,9 +228,9 @@ public class WordGame
                 }
             }
 
-            totalCorrectFirstAttempt += correctFirstAttempt;
-            totalCorrectSecondAttempt += correctSecondAttempt;
-            totalIncorrect += incorrect;
+            totalCorrectFirstAttempt    += correctFirstAttempt;
+            totalCorrectSecondAttempt   += correctSecondAttempt;
+            totalIncorrect              += incorrect;
 
             System.out.println("\nRound results: ");
             System.out.printf("- %d correct answers on the first attempt%n", correctFirstAttempt);
@@ -224,6 +247,8 @@ public class WordGame
                 totalCorrectSecondAttempt,
                 totalIncorrect);
 
+        Score.checkHighScore(currentScore, scoreFile);
+
         try
         {
             Score.appendScoreToFile(currentScore, scoreFile);
@@ -231,6 +256,5 @@ public class WordGame
         {
             System.out.println("Error saving score: " + e.getMessage());
         }
-        Score.checkHighScore(currentScore, scoreFile);
     }
 }

@@ -7,13 +7,14 @@ import java.util.Scanner;
 
 public class Main
 {
-    public static void main(String[] args)
+    public static void main(final String[] args)
     {
 
         Platform.startup(() -> {});
         Platform.setImplicitExit(false);
 
-        Scanner scanner = new Scanner(System.in);
+        final Scanner scanner;
+        scanner = new Scanner(System.in);
         int choice;
 
         do {

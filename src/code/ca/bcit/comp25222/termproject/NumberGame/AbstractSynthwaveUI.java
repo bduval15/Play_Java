@@ -29,6 +29,7 @@ public abstract class AbstractSynthwaveUI
 
     /**
      * Updates the main informational label with the provided message.
+     *
      * @param message The message to display.
      */
     protected abstract void updateInfoLabel(String message);
@@ -50,19 +51,16 @@ public abstract class AbstractSynthwaveUI
 
     /**
      * Displays a game-over dialog with the specified title and message.
-     * @param title The title of the dialog.
+     *
+     * @param title   The title of the dialog.
      * @param message The message content.
      */
     protected abstract void showGameOverDialog(String title, String message);
 
     /**
      * Updates the score display on the UI.
+     *
      * @param scoreMessage The score details to display.
      */
     protected abstract void updateScoreDisplay(String scoreMessage);
-
-    /**
-     * Initiates the game start sequence, including any UI animations or resets.
-     */
-    protected abstract void startGame();
 }

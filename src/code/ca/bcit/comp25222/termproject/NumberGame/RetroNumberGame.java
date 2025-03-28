@@ -27,25 +27,36 @@ import java.util.List;
  *
  * @author Braeden
  */
-public class RetroNumberGame extends AbstractSynthwaveUI implements GameLogic
+public final class RetroNumberGame
+        extends AbstractSynthwaveUI
+        implements GameLogic
 {
 
-    private static final int GRID_ROWS = 4;
-    private static final int GRID_COLS = 5;
-    private static final int TOTAL_NUMBERS = 20;
+    private static final int noNumPlacement     = -1;
+    private static final int GRID_ROWS          = 4;
+    private static final int GRID_COLS          = 5;
+    private static final int TOTAL_NUMBERS      = 20;
 
-    private final int[] numbers = new int[TOTAL_NUMBERS];
-    private final Button[] gridButtons = new Button[GRID_ROWS * GRID_COLS];
+    private static final int boardHGap          = 5;
+    private static final int boardVGap          = 5;
+    private static final int bracketBtnWidth    = 80;
+    private static final int bracketBtnHeight   = 40;
+    private static final int bottomBoxGap       = 20;
 
-    private Label infoLabel;
+    private static final String synthButtonCss = "synth-button";
+
+    private static int currentIndex                 = 0;
+    private static int successfulPlacementsThisGame = 0;
+    private static int totalGames                   = 0;
+    private static int totalWins                    = 0;
+    private static int totalLosses                  = 0;
+    private static int totalPlacementsAcrossGames   = 0;
+
+    private final int[]     numbers                  = new int[TOTAL_NUMBERS];
+    private final Button[]  gridButtons              = new Button[GRID_ROWS * GRID_COLS];
+
+    private Label      infoLabel;
     private BorderPane root;
-
-    private int currentIndex = 0;
-    private int successfulPlacementsThisGame = 0;
-    private static int totalGames = 0;
-    private static int totalWins = 0;
-    private static int totalLosses = 0;
-    private static int totalPlacementsAcrossGames = 0;
 
     /**
      * Constructs a new RetroNumberGame instance and builds its user interface.
@@ -98,33 +109,35 @@ public class RetroNumberGame extends AbstractSynthwaveUI implements GameLogic
         root.setTop(topBox);
 
         boardGrid = new GridPane();
-        boardGrid.setHgap(5);
-        boardGrid.setVgap(5);
+        boardGrid.setHgap(boardHGap);
+        boardGrid.setVgap(boardVGap);
         boardGrid.setAlignment(Pos.CENTER);
         boardGrid.getStyleClass().add("board-grid");
 
         for (int i = 0; i < gridButtons.length; i++)
         {
-            Button btn = new Button("[]");
-            btn.setPrefSize(80, 40);
-            btn.getStyleClass().add("synth-button");
+            final Button bracketBtn;
+            bracketBtn = new Button("[]");
+            bracketBtn.setPrefSize(bracketBtnWidth, bracketBtnHeight);
+            bracketBtn.getStyleClass().add(synthButtonCss);
 
             final int index = i;
-            btn.setOnAction(e -> placeNumber(index));
+            bracketBtn.setOnAction(e -> placeNumber(index));
 
-            gridButtons[i] = btn;
-            boardGrid.add(btn, i % GRID_COLS, i / GRID_COLS);
+            gridButtons[i] = bracketBtn;
+            boardGrid.add(bracketBtn, i % GRID_COLS, i / GRID_COLS);
         }
         root.setCenter(boardGrid);
 
         tryAgainBtn = new Button("Try Again");
-        tryAgainBtn.getStyleClass().add("synth-button");
+        tryAgainBtn.getStyleClass().add(synthButtonCss);
         tryAgainBtn.setOnAction(e -> startNewGame());
 
         quitBtn = new Button("Quit");
-        quitBtn.getStyleClass().add("synth-button");
+        quitBtn.getStyleClass().add(synthButtonCss);
         quitBtn.setOnAction(e -> {
-            final Alert alert = new Alert(AlertType.INFORMATION);
+            final Alert alert;
+            alert = new Alert(AlertType.INFORMATION);
             alert.setTitle("Final Score");
             alert.setHeaderText("Score Status");
             alert.setContentText(getScoreMessage());
@@ -132,8 +145,7 @@ public class RetroNumberGame extends AbstractSynthwaveUI implements GameLogic
             ((javafx.stage.Stage) quitBtn.getScene().getWindow()).close();
         });
 
-
-        bottomBox = new HBox(20, tryAgainBtn, quitBtn);
+        bottomBox = new HBox(bottomBoxGap, tryAgainBtn, quitBtn);
         bottomBox.setAlignment(Pos.CENTER);
         bottomBox.getStyleClass().add("bottom-box");
         root.setBottom(bottomBox);
@@ -147,7 +159,7 @@ public class RetroNumberGame extends AbstractSynthwaveUI implements GameLogic
     public void startNewGame()
     {
         resetGameBoard();
-        currentIndex = 0;
+        currentIndex                 = 0;
         successfulPlacementsThisGame = 0;
         generateAllNumbers();
         updateInfoLabel("Game started! Place the number: " + numbers[currentIndex]);
@@ -159,12 +171,18 @@ public class RetroNumberGame extends AbstractSynthwaveUI implements GameLogic
      * <p>This method creates a list of numbers from 1 to 1000, shuffles the list to randomize the order,
      * and then selects the first {@code TOTAL_NUMBERS} values from the shuffled list.
      * This approach ensures that all the numbers in the {@code numbers} array are unique.
-     *
      */
-    private void generateAllNumbers() {
-        List<Integer> numberList = new ArrayList<>();
+    private void generateAllNumbers()
+    {
+        List<Integer> numberList;
+        final int startingNum;
+        final int endNum;
 
-        for (int i = 1; i <= 1000; i++)
+        numberList = new ArrayList<>();
+        startingNum = 1;
+        endNum = 1000;
+
+        for (int i = startingNum; i <= endNum; i++)
         {
             numberList.add(i);
         }
@@ -189,7 +207,7 @@ public class RetroNumberGame extends AbstractSynthwaveUI implements GameLogic
         {
             return numbers[currentIndex];
         }
-        return -1;
+        return noNumPlacement;
     }
 
     /**
@@ -202,28 +220,28 @@ public class RetroNumberGame extends AbstractSynthwaveUI implements GameLogic
      * </p>
      *
      * @param index the board position index where the number should be placed.
-     * @return {@code true} if the number is successfully placed; {@code false} otherwise.
      */
     @Override
-    public boolean placeNumber(final int index)
+    public void placeNumber(final int index)
     {
         final String text;
         text = gridButtons[index].getText();
         if (!text.equals("[]"))
         {
-            return false;
+            return;
         }
 
-        int numberToPlace = generateNextNumber();
-        if (numberToPlace == -1)
+        final int numberToPlace;
+        numberToPlace = generateNextNumber();
+        if (numberToPlace == noNumPlacement)
         {
-            return false;
+            return;
         }
 
         if (!canPlaceHere(index, numberToPlace))
         {
             gameOver(false);
-            return false;
+            return;
         }
 
         gridButtons[index].setText(String.valueOf(numberToPlace));
@@ -236,10 +254,10 @@ public class RetroNumberGame extends AbstractSynthwaveUI implements GameLogic
         } else if (checkIfGameOver())
         {
             gameOver(false);
-        } else {
+        } else
+        {
             updateInfoLabel("Next Number: " + numbers[currentIndex]);
         }
-        return true;
     }
 
     /*
@@ -264,7 +282,8 @@ public class RetroNumberGame extends AbstractSynthwaveUI implements GameLogic
             txt = gridButtons[i].getText();
             if (!txt.equals("[]"))
             {
-                int placedNum = Integer.parseInt(txt);
+                final int placedNum;
+                placedNum = Integer.parseInt(txt);
                 if (placedNum > num)
                 {
                     return false;
@@ -273,10 +292,12 @@ public class RetroNumberGame extends AbstractSynthwaveUI implements GameLogic
         }
         for (int i = index + 1; i < gridButtons.length; i++)
         {
-            String txt = gridButtons[i].getText();
+            final String txt;
+            txt = gridButtons[i].getText();
             if (!txt.equals("[]"))
             {
-                int placedNum = Integer.parseInt(txt);
+                final int placedNum;
+                placedNum = Integer.parseInt(txt);
                 if (placedNum < num)
                 {
                     return false;
@@ -302,7 +323,8 @@ public class RetroNumberGame extends AbstractSynthwaveUI implements GameLogic
         {
             return false;
         }
-        int nextNumber = numbers[currentIndex];
+        final int nextNumber;
+        nextNumber = numbers[currentIndex];
         for (int i = 0; i < gridButtons.length; i++)
         {
             if (gridButtons[i].getText().equals("[]"))
@@ -350,19 +372,23 @@ public class RetroNumberGame extends AbstractSynthwaveUI implements GameLogic
         {
             msg = "Congratulations! You placed all 20 numbers!\n" + getScoreMessage();
             updateInfoLabel("You Win! All 20 placed!");
-        } else {
+        } else
+        {
             final int nextNumber;
             if (currentIndex < TOTAL_NUMBERS)
             {
                 nextNumber = numbers[currentIndex];
-            } else {
-                nextNumber = -1;
+            } else
+            {
+                nextNumber = noNumPlacement;
             }
 
             final String detail;
-            if (nextNumber == -1) {
+            if (nextNumber == noNumPlacement)
+            {
                 detail = "No more numbers left.";
-            } else {
+            } else
+            {
                 detail = "Impossible to place the next number: " + nextNumber + ".";
             }
 
@@ -388,7 +414,8 @@ public class RetroNumberGame extends AbstractSynthwaveUI implements GameLogic
         if (didIWin)
         {
             totalWins++;
-        } else {
+        } else
+        {
             totalLosses++;
         }
         totalPlacementsAcrossGames += successfulPlacementsThisGame;
@@ -406,10 +433,13 @@ public class RetroNumberGame extends AbstractSynthwaveUI implements GameLogic
     private String getScoreMessage()
     {
         final double avg;
-        if (totalGames == 0)
+        final double noGamesPlayed;
+        noGamesPlayed = 0;
+        if (totalGames == noGamesPlayed)
         {
             avg = 0.0;
-        } else {
+        } else
+        {
             avg = (double) totalPlacementsAcrossGames / totalGames;
         }
 
@@ -500,14 +530,5 @@ public class RetroNumberGame extends AbstractSynthwaveUI implements GameLogic
     protected void updateScoreDisplay(final String scoreMessage)
     {
         infoLabel.setText(scoreMessage);
-    }
-
-    /**
-     * Starts the game by invoking startNewGame.
-     */
-    @Override
-    protected void startGame()
-    {
-        startNewGame();
     }
 }
