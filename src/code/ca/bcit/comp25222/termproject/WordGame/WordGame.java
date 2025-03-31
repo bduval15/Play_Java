@@ -12,7 +12,9 @@ import java.util.*;
  * across sessions.
  *
  * @author Braeden Duval
+ * @version 1.0
  */
+
 public final class WordGame
 {
     private static final int NUM_QUESTIONS_PER_GAME     = 10;
@@ -32,35 +34,6 @@ public final class WordGame
     private int totalCorrectFirstAttempt;
     private int totalCorrectSecondAttempt;
     private int totalIncorrect;
-
-    /**
-     * Constructor to initialize the game state and resources
-     */
-    public WordGame()
-    {
-        totalGamesPlayed            = 0;
-        totalCorrectFirstAttempt    = 0;
-        totalCorrectSecondAttempt   = 0;
-        totalIncorrect              = 0;
-
-        final Scanner scan;
-        final Random random;
-
-        scan    = new Scanner(System.in);
-        random  = new Random();
-
-        this.scan = scan;
-        this.rand = random;
-
-        try
-        {
-            this.countryMap     = World.buildCountries();
-            this.countryKeys    = new ArrayList<>(countryMap.keySet());
-        } catch (FileNotFoundException e)
-        {
-            System.out.println("File not found");
-        }
-    }
 
     /*
      * Prompts the user to play again and validates their response.
@@ -92,6 +65,35 @@ public final class WordGame
     }
 
     /**
+     * Constructor to initialize the game state and resources
+     */
+    public WordGame()
+    {
+        totalGamesPlayed            = 0;
+        totalCorrectFirstAttempt    = 0;
+        totalCorrectSecondAttempt   = 0;
+        totalIncorrect              = 0;
+
+        final Scanner scan;
+        final Random random;
+
+        scan    = new Scanner(System.in);
+        random  = new Random();
+
+        this.scan = scan;
+        this.rand = random;
+
+        try
+        {
+            this.countryMap     = World.buildCountries();
+            this.countryKeys    = new ArrayList<>(countryMap.keySet());
+        } catch (FileNotFoundException e)
+        {
+            System.out.println("File not found");
+        }
+    }
+
+    /**
      * The method that starts the game.
      * It initializes the game, loads country data, handles game rounds,
      * tracks user scores, and checks for high scores.
@@ -113,7 +115,8 @@ public final class WordGame
                     System.out.println("Failed to create file '" + scoreFile + "'.");
                 }
             }
-        } catch (IOException e) {
+        } catch (final IOException e) {
+            System.out.println("Error retrieving score file: " + e.getMessage());
             e.printStackTrace();
         }
 
@@ -252,7 +255,7 @@ public final class WordGame
         try
         {
             Score.appendScoreToFile(currentScore, scoreFile);
-        } catch (IOException e)
+        } catch (final IOException e)
         {
             System.out.println("Error saving score: " + e.getMessage());
         }

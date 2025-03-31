@@ -25,11 +25,13 @@ import java.util.List;
  * place them such that the numbers to the left are always less than or equal to the number being
  * placed, and the numbers to the right are greater than or equal to it.</p>
  *
- * @author Braeden
+ * @author Braeden Duval
+ * @version 1.0
  */
+
 public final class RetroNumberGame
-        extends AbstractSynthwaveUI
-        implements GameLogic
+             extends AbstractSynthwaveUI
+             implements GameLogic
 {
 
     private static final int noNumPlacement     = -1;
@@ -58,22 +60,156 @@ public final class RetroNumberGame
     private Label      infoLabel;
     private BorderPane root;
 
-    /**
-     * Constructs a new RetroNumberGame instance and builds its user interface.
+    /*
+     * Populates the {@code numbers} array with a set of unique random numbers.
+     *
+     * <p>This method creates a list of numbers from 1 to 1000, shuffles the list to randomize the order,
+     * and then selects the first {@code TOTAL_NUMBERS} values from the shuffled list.
+     * This approach ensures that all the numbers in the {@code numbers} array are unique.
      */
-    public RetroNumberGame()
+    private void generateAllNumbers()
     {
-        buildUI();
+        List<Integer> numberList;
+        final int startingNum;
+        final int endNum;
+
+        numberList = new ArrayList<>();
+        startingNum = 1;
+        endNum = 1000;
+
+        for (int i = startingNum; i <= endNum; i++)
+        {
+            numberList.add(i);
+        }
+
+        Collections.shuffle(numberList);
+
+        for (int i = 0; i < TOTAL_NUMBERS; i++)
+        {
+            numbers[i] = numberList.get(i);
+        }
+    }
+
+    /*
+     * Determines if the given number can be legally placed at the specified index on the board.
+     * <p>
+     * The number is considered legal if:
+     * <ul>
+     *     <li>All numbers placed in positions prior to {@code index} are less than or equal to the number.</li>
+     *     <li>All numbers placed in positions after {@code index} are greater than or equal to the number.</li>
+     * </ul>
+     * </p>
+     *
+     * @param index the board position to check.
+     * @param num   the number that is intended to be placed.
+     * @return {@code true} if the number can be legally placed; {@code false} otherwise.
+     */
+    private boolean canPlaceHere(final int index, final int num)
+    {
+        for (int i = 0; i < index; i++)
+        {
+            final String txt;
+            txt = gridButtons[i].getText();
+            if (!txt.equals("[]"))
+            {
+                final int placedNum;
+                placedNum = Integer.parseInt(txt);
+                if (placedNum > num)
+                {
+                    return false;
+                }
+            }
+        }
+        for (int i = index + 1; i < gridButtons.length; i++)
+        {
+            final String txt;
+            txt = gridButtons[i].getText();
+            if (!txt.equals("[]"))
+            {
+                final int placedNum;
+                placedNum = Integer.parseInt(txt);
+                if (placedNum < num)
+                {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     /**
-     * Returns the root pane of the game UI.
+     * Handles the end-of-game procedures.
+     * <p>
+     * This method disables further game interaction, updates the overall score, and displays a game-over
+     * dialog informing the user whether they won or lost. The dialog message includes a summary of the score.
+     * </p>
      *
-     * @return the BorderPane that serves as the root of the game UI.
+     * @param didIWin {@code true} if the game was won; {@code false} if lost.
      */
-    public Pane getRootPane()
+    private void gameOver(final boolean didIWin)
     {
-        return root;
+        disableGameControls();
+        updateScoreOnGameEnd(didIWin);
+
+        final String msg;
+        if (didIWin)
+        {
+            msg = "Congratulations! You placed all 20 numbers!\n" + getScoreMessage();
+            updateInfoLabel("You Win! All 20 placed!");
+        } else
+        {
+            final int nextNumber;
+            if (currentIndex < TOTAL_NUMBERS)
+            {
+                nextNumber = numbers[currentIndex];
+            } else
+            {
+                nextNumber = noNumPlacement;
+            }
+
+            final String detail;
+            if (nextNumber == noNumPlacement)
+            {
+                detail = "No more numbers left.";
+            } else
+            {
+                detail = "Impossible to place the next number: " + nextNumber + ".";
+            }
+
+            msg = "Game Over!\n" + detail + "\n" + getScoreMessage();
+            updateInfoLabel("Game Over! " + detail);
+        }
+        showGameOverDialog(msg);
+    }
+
+    /*
+     * Generates a formatted summary of the current score statistics.
+     * <p>
+     * The summary includes the total number of games played, wins, losses, total placements,
+     * and the average number of placements per game.
+     * </p>
+     *
+     * @return a string representing the score summary.
+     */
+    private String getScoreMessage()
+    {
+        final double avg;
+        final double noGamesPlayed;
+        noGamesPlayed = 0;
+        if (totalGames == noGamesPlayed)
+        {
+            avg = 0.0;
+        } else
+        {
+            avg = (double) totalPlacementsAcrossGames / totalGames;
+        }
+
+        final String scoreMessage;
+        scoreMessage = String.format(
+                "Games played: %d\nWins: %d\nLosses: %d\nTotal placements: %d\nAverage placements per game: %.2f",
+                totalGames, totalWins, totalLosses, totalPlacementsAcrossGames, avg
+        );
+        return scoreMessage;
     }
 
     /**
@@ -165,35 +301,6 @@ public final class RetroNumberGame
         updateInfoLabel("Game started! Place the number: " + numbers[currentIndex]);
     }
 
-    /**
-     * Populates the {@code numbers} array with a set of unique random numbers.
-     *
-     * <p>This method creates a list of numbers from 1 to 1000, shuffles the list to randomize the order,
-     * and then selects the first {@code TOTAL_NUMBERS} values from the shuffled list.
-     * This approach ensures that all the numbers in the {@code numbers} array are unique.
-     */
-    private void generateAllNumbers()
-    {
-        List<Integer> numberList;
-        final int startingNum;
-        final int endNum;
-
-        numberList = new ArrayList<>();
-        startingNum = 1;
-        endNum = 1000;
-
-        for (int i = startingNum; i <= endNum; i++)
-        {
-            numberList.add(i);
-        }
-
-        Collections.shuffle(numberList);
-
-        for (int i = 0; i < TOTAL_NUMBERS; i++)
-        {
-            numbers[i] = numberList.get(i);
-        }
-    }
 
     /**
      * Returns the next number to be placed on the board.
@@ -260,52 +367,6 @@ public final class RetroNumberGame
         }
     }
 
-    /*
-     * Determines if the given number can be legally placed at the specified index on the board.
-     * <p>
-     * The number is considered legal if:
-     * <ul>
-     *     <li>All numbers placed in positions prior to {@code index} are less than or equal to the number.</li>
-     *     <li>All numbers placed in positions after {@code index} are greater than or equal to the number.</li>
-     * </ul>
-     * </p>
-     *
-     * @param index the board position to check.
-     * @param num   the number that is intended to be placed.
-     * @return {@code true} if the number can be legally placed; {@code false} otherwise.
-     */
-    private boolean canPlaceHere(final int index, final int num)
-    {
-        for (int i = 0; i < index; i++)
-        {
-            final String txt;
-            txt = gridButtons[i].getText();
-            if (!txt.equals("[]"))
-            {
-                final int placedNum;
-                placedNum = Integer.parseInt(txt);
-                if (placedNum > num)
-                {
-                    return false;
-                }
-            }
-        }
-        for (int i = index + 1; i < gridButtons.length; i++)
-        {
-            final String txt;
-            txt = gridButtons[i].getText();
-            if (!txt.equals("[]"))
-            {
-                final int placedNum;
-                placedNum = Integer.parseInt(txt);
-                if (placedNum < num)
-                {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
 
     /**
      * Checks whether the game is in an unwinnable state due to lack of valid moves.
@@ -354,51 +415,6 @@ public final class RetroNumberGame
 
 
     /**
-     * Handles the end-of-game procedures.
-     * <p>
-     * This method disables further game interaction, updates the overall score, and displays a game-over
-     * dialog informing the user whether they won or lost. The dialog message includes a summary of the score.
-     * </p>
-     *
-     * @param didIWin {@code true} if the game was won; {@code false} if lost.
-     */
-    private void gameOver(final boolean didIWin)
-    {
-        disableGameControls();
-        updateScoreOnGameEnd(didIWin);
-
-        final String msg;
-        if (didIWin)
-        {
-            msg = "Congratulations! You placed all 20 numbers!\n" + getScoreMessage();
-            updateInfoLabel("You Win! All 20 placed!");
-        } else
-        {
-            final int nextNumber;
-            if (currentIndex < TOTAL_NUMBERS)
-            {
-                nextNumber = numbers[currentIndex];
-            } else
-            {
-                nextNumber = noNumPlacement;
-            }
-
-            final String detail;
-            if (nextNumber == noNumPlacement)
-            {
-                detail = "No more numbers left.";
-            } else
-            {
-                detail = "Impossible to place the next number: " + nextNumber + ".";
-            }
-
-            msg = "Game Over!\n" + detail + "\n" + getScoreMessage();
-            updateInfoLabel("Game Over! " + detail);
-        }
-        showGameOverDialog(msg);
-    }
-
-    /**
      * Updates the score statistics when a game ends.
      * <p>
      * This method increments the total game count, records a win or loss based on the game outcome,
@@ -419,36 +435,6 @@ public final class RetroNumberGame
             totalLosses++;
         }
         totalPlacementsAcrossGames += successfulPlacementsThisGame;
-    }
-
-    /*
-     * Generates a formatted summary of the current score statistics.
-     * <p>
-     * The summary includes the total number of games played, wins, losses, total placements,
-     * and the average number of placements per game.
-     * </p>
-     *
-     * @return a string representing the score summary.
-     */
-    private String getScoreMessage()
-    {
-        final double avg;
-        final double noGamesPlayed;
-        noGamesPlayed = 0;
-        if (totalGames == noGamesPlayed)
-        {
-            avg = 0.0;
-        } else
-        {
-            avg = (double) totalPlacementsAcrossGames / totalGames;
-        }
-
-        final String scoreMessage;
-        scoreMessage = String.format(
-                "Games played: %d\nWins: %d\nLosses: %d\nTotal placements: %d\nAverage placements per game: %.2f",
-                totalGames, totalWins, totalLosses, totalPlacementsAcrossGames, avg
-        );
-        return scoreMessage;
     }
 
     /**
@@ -529,5 +515,23 @@ public final class RetroNumberGame
     protected void updateScoreDisplay(final String scoreMessage)
     {
         infoLabel.setText(scoreMessage);
+    }
+
+    /**
+     * Constructs a new RetroNumberGame instance and builds its user interface.
+     */
+    public RetroNumberGame()
+    {
+        buildUI();
+    }
+
+    /**
+     * Returns the root pane of the game UI.
+     *
+     * @return the BorderPane that serves as the root of the game UI.
+     */
+    public Pane getRootPane()
+    {
+        return root;
     }
 }

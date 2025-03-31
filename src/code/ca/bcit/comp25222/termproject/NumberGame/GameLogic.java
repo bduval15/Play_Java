@@ -7,7 +7,9 @@ package ca.bcit.comp25222.termproject.NumberGame;
  * win/lose conditions, and updating the score at game end.</p>
  *
  * @author Braeden Duval
+ * @version 1.0
  */
+
 public interface GameLogic
 {
 
@@ -18,11 +20,11 @@ public interface GameLogic
     void startNewGame();
 
     /**
-     * Generates and returns the next number to be placed on the board.
+     * Updates the score at the end of the game.
      *
-     * @return the next number to be placed, or -1 if no more numbers are available.
+     * @param didWin {@code true} if the game was won, {@code false} otherwise.
      */
-    int generateNextNumber();
+    void updateScoreOnGameEnd(boolean didWin);
 
     /**
      * Attempts to place the next number at the specified index on the game board.
@@ -30,6 +32,13 @@ public interface GameLogic
      * @param index the index where the number should be placed.
      */
     void placeNumber(int index);
+
+    /**
+     * Generates and returns the next number to be placed on the board.
+     *
+     * @return the next number to be placed, or -1 if no more numbers are available.
+     */
+    int generateNextNumber();
 
     /**
      * Checks if the game is over by determining if there are no valid moves remaining.
@@ -44,11 +53,4 @@ public interface GameLogic
      * @return {@code true} if the game has been won, {@code false} otherwise.
      */
     boolean checkIfWin();
-
-    /**
-     * Updates the score at the end of the game.
-     *
-     * @param didWin {@code true} if the game was won, {@code false} otherwise.
-     */
-    void updateScoreOnGameEnd(boolean didWin);
 }

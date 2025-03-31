@@ -16,7 +16,9 @@ import java.util.List;
  * scores from a file, and check for high scores.
  *
  * @author Braeden Duval
+ * @version 1.0
  */
+
 final class Score
 {
     private static final int GAMES_LINE_INDEX           = 1;
@@ -38,6 +40,175 @@ final class Score
     private final int           numCorrectFirstAttempt;
     private final int           numCorrectSecondAttempt;
     private final int           numIncorrectTwoAttempts;
+
+    /*
+     * Parses a list of strings representing a score record into a Score object.
+     *
+     * @param record A list of strings representing a single score entry.
+     * @return A Score object parsed from the given record.
+     * @throws IllegalArgumentException If the format of the score record is invalid.
+     */
+    private static Score parseScore(final List<String> record)
+    {
+        try
+        {
+            final String dateLine;
+            final String gamesLine;
+            final String firstLine;
+            final String secondLine;
+            final String incorrectLine;
+            final String dateString;
+            final LocalDateTime dateTime;
+
+            dateLine        = record.getFirst();
+            gamesLine       = record.get(GAMES_LINE_INDEX);
+            firstLine       = record.get(FIRST_CORRECT_LINE_INDEX);
+            secondLine      = record.get(SECOND_CORRECT_LINE_INDEX);
+            incorrectLine   = record.get(INCORRECT_LINE_INDEX);
+            dateString      = dateLine.substring(dateTimeText.length()).trim();
+            dateTime        = LocalDateTime.parse(dateString, formatter);
+
+            final int games;
+            final int first;
+            final int second;
+            final int incorrect;
+            final Score score;
+
+            games       = Integer.parseInt(gamesLine.substring(gamesPlayedText.length()).trim());
+            first       = Integer.parseInt(firstLine.substring(correctFirstAttemptText.length()).trim());
+            second      = Integer.parseInt(secondLine.substring(correctSecondAttemptText.length()).trim());
+            incorrect   = Integer.parseInt(incorrectLine.substring(incorrectAttemptsText.length()).trim());
+            score       = new Score(dateTime, games, first, second, incorrect);
+
+            return score;
+
+        } catch (final NumberFormatException e)
+        {
+            throw new IllegalArgumentException("Invalid score format: ");
+        }
+    }
+
+    /**
+     * Appends a score record to a file.
+     *
+     * @param score    The score object to be written to the file.
+     * @param fileName The name of the file where the score should be stored.
+     * @throws IOException If an error occurs while writing to the file.
+     */
+    static void appendScoreToFile(
+            final Score  score,
+            final String fileName)
+            throws IOException
+    {
+        try (final FileWriter     fw      = new FileWriter(fileName, true);
+             final BufferedWriter bw      = new BufferedWriter(fw);
+             final PrintWriter    pw      = new PrintWriter(bw))
+        {
+            pw.println(score.toString());
+            pw.println();
+        }
+    }
+
+    /**
+     * Compares the current score against the highest recorded average score
+     * from a file and displays a message if a new high score is achieved.
+     *
+     * @param currentScore The current score to compare against the high score.
+     */
+    static void checkHighScore(final Score currentScore,
+            final String fileName)
+    {
+        try
+        {
+            final List<Score> scores;
+            final Score highestScore;
+            final double currentAvg;
+
+            scores = readScoresFromFile(fileName);
+
+            highestScore = scores.stream()
+                    .max(Comparator.comparingDouble(Score::getAverageScorePerGame))
+                    .orElse(null);
+
+            currentAvg = currentScore.getAverageScorePerGame();
+
+            if (highestScore == null)
+            {
+                System.out.printf("CONGRATULATIONS! You are the new high score with an average of " +
+                                          "%.2f points per game; no previous record exists.%n", currentAvg);
+            } else
+            {
+                final double highestAvg;
+                final String highScoreDateTime;
+
+                highestAvg          = highestScore.getAverageScorePerGame();
+                highScoreDateTime   = highestScore.dateTimePlayed.toString();
+
+                if (currentAvg > highestAvg)
+                {
+                    System.out.printf("CONGRATULATIONS! You are the new high score with an average of" +
+                                              " %.2f points per game; " +
+                                              "the previous record was %.2f points per game on %s.%n",
+                                      currentAvg, highestAvg, highScoreDateTime);
+                } else
+                {
+                    System.out.printf("You did not beat the high score of %.2f points per game from %s.%n",
+                                      highestAvg, highScoreDateTime);
+                }
+            }
+        } catch (final IOException e)
+        {
+            System.out.println("Error reading score file: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Reads and parses scores from a file into a list of Score objects.
+     *
+     * @param fileName The name of the file containing score records.
+     * @return A list of Score objects parsed from the file.
+     * @throws IOException If an error occurs while reading the file.
+     */
+    static List<Score> readScoresFromFile(
+            final String fileName)
+            throws IOException
+    {
+
+        final List<Score> scores;
+        final List<String> lines;
+        final List<String> record;
+
+        scores  = new ArrayList<>();
+        lines   = Files.readAllLines(Paths.get(fileName));
+        record  = new ArrayList<>();
+
+        for (String line : lines)
+        {
+            if (line.trim().isEmpty())
+            {
+                if (!record.isEmpty())
+                {
+                    final Score s;
+                    s = parseScore(record);
+
+                    scores.add(s);
+
+                    record.clear();
+                }
+            } else
+            {
+                record.add(line);
+            }
+        }
+        if (!record.isEmpty())
+        {
+            final Score s;
+            s = parseScore(record);
+
+            scores.add(s);
+        }
+        return scores;
+    }
 
     /**
      * Constructs a Score object with a specified date and game statistics.
@@ -142,174 +313,5 @@ final class Score
         gameInfo = sb.toString();
 
         return gameInfo;
-    }
-
-    /**
-     * Appends a score record to a file.
-     *
-     * @param score    The score object to be written to the file.
-     * @param fileName The name of the file where the score should be stored.
-     * @throws IOException If an error occurs while writing to the file.
-     */
-    static void appendScoreToFile(
-            final Score  score,
-            final String fileName)
-            throws IOException
-    {
-        try (final FileWriter     fw      = new FileWriter(fileName, true);
-             final BufferedWriter bw      = new BufferedWriter(fw);
-             final PrintWriter    pw      = new PrintWriter(bw))
-        {
-            pw.println(score.toString());
-            pw.println();
-        }
-    }
-
-    /**
-     * Reads and parses scores from a file into a list of Score objects.
-     *
-     * @param fileName The name of the file containing score records.
-     * @return A list of Score objects parsed from the file.
-     * @throws IOException If an error occurs while reading the file.
-     */
-    static List<Score> readScoresFromFile(
-            final String fileName)
-            throws IOException
-    {
-
-        final List<Score> scores;
-        final List<String> lines;
-        final List<String> record;
-
-        scores  = new ArrayList<>();
-        lines   = Files.readAllLines(Paths.get(fileName));
-        record  = new ArrayList<>();
-
-        for (String line : lines)
-        {
-            if (line.trim().isEmpty())
-            {
-                if (!record.isEmpty())
-                {
-                    final Score s;
-                    s = parseScore(record);
-
-                    scores.add(s);
-
-                    record.clear();
-                }
-            } else
-            {
-                record.add(line);
-            }
-        }
-        if (!record.isEmpty())
-        {
-            final Score s;
-            s = parseScore(record);
-
-            scores.add(s);
-        }
-        return scores;
-    }
-
-    /*
-     * Parses a list of strings representing a score record into a Score object.
-     *
-     * @param record A list of strings representing a single score entry.
-     * @return A Score object parsed from the given record.
-     * @throws IllegalArgumentException If the format of the score record is invalid.
-     */
-    private static Score parseScore(final List<String> record)
-    {
-        try
-        {
-            final String dateLine;
-            final String gamesLine;
-            final String firstLine;
-            final String secondLine;
-            final String incorrectLine;
-            final String dateString;
-            final LocalDateTime dateTime;
-
-            dateLine        = record.getFirst();
-            gamesLine       = record.get(GAMES_LINE_INDEX);
-            firstLine       = record.get(FIRST_CORRECT_LINE_INDEX);
-            secondLine      = record.get(SECOND_CORRECT_LINE_INDEX);
-            incorrectLine   = record.get(INCORRECT_LINE_INDEX);
-            dateString      = dateLine.substring(dateTimeText.length()).trim();
-            dateTime        = LocalDateTime.parse(dateString, formatter);
-
-            final int games;
-            final int first;
-            final int second;
-            final int incorrect;
-            final Score score;
-
-            games       = Integer.parseInt(gamesLine.substring(gamesPlayedText.length()).trim());
-            first       = Integer.parseInt(firstLine.substring(correctFirstAttemptText.length()).trim());
-            second      = Integer.parseInt(secondLine.substring(correctSecondAttemptText.length()).trim());
-            incorrect   = Integer.parseInt(incorrectLine.substring(incorrectAttemptsText.length()).trim());
-            score       = new Score(dateTime, games, first, second, incorrect);
-
-            return score;
-
-        } catch (NumberFormatException e)
-        {
-            throw new IllegalArgumentException("Invalid score format: ");
-        }
-    }
-
-    /**
-     * Compares the current score against the highest recorded average score
-     * from a file and displays a message if a new high score is achieved.
-     *
-     * @param currentScore The current score to compare against the high score.
-     */
-    static void checkHighScore(final Score currentScore,
-                               final String fileName)
-    {
-        try
-        {
-            final List<Score> scores;
-            final Score highestScore;
-            final double currentAvg;
-
-            scores = readScoresFromFile(fileName);
-
-            highestScore = scores.stream()
-                    .max(Comparator.comparingDouble(Score::getAverageScorePerGame))
-                    .orElse(null);
-
-            currentAvg = currentScore.getAverageScorePerGame();
-
-            if (highestScore == null)
-            {
-                System.out.printf("CONGRATULATIONS! You are the new high score with an average of " +
-                                          "%.2f points per game; no previous record exists.%n", currentAvg);
-            } else
-            {
-                final double highestAvg;
-                final String highScoreDateTime;
-
-                highestAvg          = highestScore.getAverageScorePerGame();
-                highScoreDateTime   = highestScore.dateTimePlayed.toString();
-
-                if (currentAvg > highestAvg)
-                {
-                    System.out.printf("CONGRATULATIONS! You are the new high score with an average of" +
-                                      " %.2f points per game; " +
-                                      "the previous record was %.2f points per game on %s.%n",
-                                      currentAvg, highestAvg, highScoreDateTime);
-                } else
-                {
-                    System.out.printf("You did not beat the high score of %.2f points per game from %s.%n",
-                                      highestAvg, highScoreDateTime);
-                }
-            }
-        } catch (IOException e)
-        {
-            System.out.println("Error reading score file: " + e.getMessage());
-        }
     }
 }

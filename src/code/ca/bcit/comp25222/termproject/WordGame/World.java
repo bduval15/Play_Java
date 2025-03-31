@@ -14,6 +14,7 @@ import java.util.*;
  *
  * @author Braeden Duval
  */
+
 final class World
 {
     private static final int        TEXT_SPLIT_INDEX_START     = 0;
@@ -21,6 +22,30 @@ final class World
     private static final int        MAX_WORD_SPLIT             = 2;
     private static final int        TOTAL_FACTS                = 3;
     private static final String     filepath                   = "src/resources/";
+
+    /*
+     * Formats country names by rearranging names that contain a comma.
+     * If the country name is in the format "Last, First", it is converted
+     * to "First Last".
+     *
+     * @param countryName The raw country name as read from the file.
+     * @return The formatted country name.
+     */
+    private static String formatCountryName(final String countryName)
+    {
+        if (countryName.contains(","))
+        {
+            final String[] parts;
+            final String format;
+
+            parts   = countryName.split(",", MAX_WORD_SPLIT);
+            format  = parts[TEXT_SPLIT_INDEX_END].trim() +
+                    " " + parts[TEXT_SPLIT_INDEX_START].trim();
+
+            return format;
+        }
+        return countryName;
+    }
 
     /**
      * <p>Builds a map of country names mapped to {@code Country} objects by reading
@@ -109,29 +134,5 @@ final class World
         immutableCountryMap = Collections.unmodifiableMap(countryMap);
 
         return immutableCountryMap;
-    }
-
-    /*
-     * Formats country names by rearranging names that contain a comma.
-     * If the country name is in the format "Last, First", it is converted
-     * to "First Last".
-     *
-     * @param countryName The raw country name as read from the file.
-     * @return The formatted country name.
-     */
-    private static String formatCountryName(final String countryName)
-    {
-        if (countryName.contains(","))
-        {
-            final String[] parts;
-            final String format;
-
-            parts   = countryName.split(",", MAX_WORD_SPLIT);
-            format  = parts[TEXT_SPLIT_INDEX_END].trim() +
-                    " " + parts[TEXT_SPLIT_INDEX_START].trim();
-
-            return format;
-        }
-        return countryName;
     }
 }

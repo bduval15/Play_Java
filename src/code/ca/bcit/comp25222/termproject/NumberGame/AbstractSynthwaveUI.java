@@ -21,8 +21,12 @@ package ca.bcit.comp25222.termproject.NumberGame;
  * themed games.</p>
  *
  * @see ca.bcit.comp25222.termproject.NumberGame.GameLogic
+ *
+ * @author Braeden Duval
+ * @version 1.0
  */
-public abstract class AbstractSynthwaveUI
+
+abstract class AbstractSynthwaveUI
 {
 
     protected abstract void buildUI();

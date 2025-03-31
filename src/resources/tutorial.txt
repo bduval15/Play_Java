@@ -1,0 +1,26 @@
+How to Play:
+
+Goal:
+Satisfy all sink demands before time runs out.
+
+Node Types:
+• SOURCE: Produces a resource.
+• PROCESSOR: Combines inputs to produce a new resource.
+• SINK: Requires a specific resource.
+
+Instructions:
+
+Connect Nodes:
+    Click a node’s output connector (for sources or processors) then click a valid target’s input connector (processor or sink).
+
+Start Simulation:
+    Press “Start Sim” to begin resource flow.
+
+Monitor & Control:
+    – If a sink gets the wrong resource, stop the sim and use “Reset Pipes (R)” to rebuild.
+    – You can always manually stop the sim.
+
+Win the Level:
+    When all sinks are satisfied, you clear the level and earn points based on time remaining and pipeline efficiency.
+
+Faster Time + Fewer Pipes = Higher Score!

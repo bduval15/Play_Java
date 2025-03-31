@@ -36,8 +36,11 @@ import javafx.stage.Stage;
  * </p>
  *
  * @author Braeden Duval
+ * @version 1.0
  */
-public final class NumberGameMainMenu extends Application
+
+public final class NumberGameMainMenu
+             extends Application
 {
     private static final String cssFile             = "/NumberGame.css";
     private static final String buttonOverlayCSS    = "overlay-button";
@@ -48,49 +51,6 @@ public final class NumberGameMainMenu extends Application
     private static final int    vboxAxis            = 20;
     private static final int    sceneHeight         = 500;
     private static final int    sceneWidth          = 700;
-    /**
-     * Initializes and displays the primary JavaFX stage for the Retro 20-Number Challenge game.
-     * <p>
-     * This method creates a new {@link RetroNumberGame} instance and sets up its user interface by:
-     * <ul>
-     *   <li>Creating a game pane containing the game board.</li>
-     *   <li>Building an overlay pane with the game title and control buttons.</li>
-     *   <li>Combining these panes into a scene and applying the CSS stylesheet if available.</li>
-     * </ul>
-     * The primary stage's title is set and the stage is then displayed.
-     * </p>
-     *
-     * @param primaryStage the primary stage on which the game UI will be displayed
-     */
-    @Override
-    public void start(final Stage primaryStage)
-    {
-        final RetroNumberGame   game;
-        final StackPane         gamePane;
-        final VBox              overlayPane;
-        final StackPane         root;
-        final Scene             scene;
-
-        game        = new RetroNumberGame();
-        gamePane    = new StackPane(game.getRootPane());
-        overlayPane = buildOverlayPane(game, primaryStage);
-        root        = new StackPane();
-        scene       = new Scene(root, sceneWidth, sceneHeight);
-
-        root.getChildren().addAll(gamePane, overlayPane);
-
-        try
-        {
-            scene.getStylesheets().add(getClass().getResource(cssFile).toExternalForm());
-        } catch (NullPointerException e)
-        {
-            System.err.printf("Error: %s not found.", cssFile);
-        }
-
-        primaryStage.setTitle(gameTitle);
-        primaryStage.setScene(scene);
-        primaryStage.show();
-    }
 
     /**
      * Builds and returns the overlay pane containing the game title and control buttons.
@@ -161,11 +121,55 @@ public final class NumberGameMainMenu extends Application
                 stage.show();
                 stage.toFront();
                 stage.requestFocus();
-            } catch (Exception e)
+            } catch (final Exception e)
             {
                 System.out.println("Cannot launch game." + e.getMessage());
                 e.printStackTrace();
             }
         });
+    }
+
+    /**
+     * Initializes and displays the primary JavaFX stage for the Retro 20-Number Challenge game.
+     * <p>
+     * This method creates a new {@link RetroNumberGame} instance and sets up its user interface by:
+     * <ul>
+     *   <li>Creating a game pane containing the game board.</li>
+     *   <li>Building an overlay pane with the game title and control buttons.</li>
+     *   <li>Combining these panes into a scene and applying the CSS stylesheet if available.</li>
+     * </ul>
+     * The primary stage's title is set and the stage is then displayed.
+     * </p>
+     *
+     * @param primaryStage the primary stage on which the game UI will be displayed
+     */
+    @Override
+    public void start(final Stage primaryStage)
+    {
+        final RetroNumberGame   game;
+        final StackPane         gamePane;
+        final VBox              overlayPane;
+        final StackPane         root;
+        final Scene             scene;
+
+        game        = new RetroNumberGame();
+        gamePane    = new StackPane(game.getRootPane());
+        overlayPane = buildOverlayPane(game, primaryStage);
+        root        = new StackPane();
+        scene       = new Scene(root, sceneWidth, sceneHeight);
+
+        root.getChildren().addAll(gamePane, overlayPane);
+
+        try
+        {
+            scene.getStylesheets().add(getClass().getResource(cssFile).toExternalForm());
+        } catch (final NullPointerException e)
+        {
+            System.err.printf("Error: %s not found.", cssFile);
+        }
+
+        primaryStage.setTitle(gameTitle);
+        primaryStage.setScene(scene);
+        primaryStage.show();
     }
 }
