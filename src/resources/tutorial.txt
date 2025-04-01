@@ -4,9 +4,9 @@ Goal:
 Satisfy all sink demands before time runs out.
 
 Node Types:
-• SOURCE: Produces a resource.
-• PROCESSOR: Combines inputs to produce a new resource.
-• SINK: Requires a specific resource.
+• SOURCE (CIRCLES): Produces a resource.
+• PROCESSOR (SQUARES): Combines inputs to produce a new resource.
+• SINK (OCTAGONS): Requires a specific resource.
 
 Instructions:
 
