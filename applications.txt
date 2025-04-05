@@ -13,22 +13,23 @@ Substitution in classes SourceNode, ProcessorNode, SinkNode
 Lesson 4:
 Abstract Methods in class GameNode
 Abstract Classes in class GameNode
+Interfaces in class GameLogic
 
 Lesson 5:
-Collections in classes GameController, HighScoreManager
+Collections in classes GameController
 Generics in ResourceRouterMainMenu
 
 Lesson 6:
-Lambda Expressions in class LevelLoader
-Method References in class HighScoreManager
-Nested Classes in ResourceRouterMainMenu
+Lambda Expressions in class LevelLoader, ResourceRouterMainMenu
+Method References in GameController
+Static Nested Class in LevelManager
 
 Lesson 8:
-File in class HighScoreManager
+File in class LevelLoader
 Streams and Filters in class LevelLoader
 
 Lesson 9:
-GUI in classes GameController, GameNode
+GUI in classes GameController, ResourceRouterMainMenu
 
 Lesson 10:
 Unit Tests

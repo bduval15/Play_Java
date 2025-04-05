@@ -1,0 +1,23 @@
+Goal:
+Deliver all required resources to the Sink nodes before time runs out.
+
+Nodes:
+    Source (Circle): Produces a single resource (e.g., RED, BLUE, YELLOW).
+    Processor (Square): Combines two resources to produce a new one (e.g., RED + BLUE → PURPLE).
+    Sink (Octagon): Demands specific resource(s). Providing extra or incorrect resources causes an error.
+
+Connecting Nodes:
+    Clicking on a node (Sources or Processors) starts the connection.
+    Click on the target node’s (Processors or Sinks) to complete the pipe.
+    Each Source/Processor can have two outgoing pipes; each Sink can accept two resource types.
+
+Simulation Control:
+    Start or Stop flow with the “Start Sim / Stop Sim” button or pressing "E"
+    Stop it at any time to adjust pipes or if an error occurs.
+    Reset Pipes (R) clears all pipes (useful after errors).
+    Be Careful, you clear all the pipes at once so choose your connections carefully.
+
+Color Mixing & Win Condition:
+    Color Recipes: Use Processors to combine source colors (e.g., RED + YELLOW = ORANGE).
+    Sink Demands: A Sink might need one or two distinct resources. Fulfill all demands to win.
+    Scoring: Faster completion + fewer pipes = higher score.

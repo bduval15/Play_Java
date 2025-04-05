@@ -1,38 +1,39 @@
 /* === GLOBAL & LAYOUT === */
-.root {
+.root
+{
     -fx-background-color: linear-gradient(to bottom, #1a1a2e, #16213e);
     -fx-padding: 0;
     -fx-font-family: 'Consolas', 'Courier New', monospace;
 }
 
-/* Common background for panels */
 .control-bar,
 .bottom-button-bar,
-.overlay {
+.overlay
+{
     -fx-background-color: rgba(15, 15, 26, 0.75);
 }
 
-/* Control bar settings */
-.control-bar {
+.control-bar
+{
     -fx-padding: 8px 15px;
     -fx-alignment: center_left;
 }
 
-/* Bottom button bar settings */
-.bottom-button-bar {
+.bottom-button-bar
+{
     -fx-padding: 10px;
     -fx-alignment: center;
 }
 
-/* The game pane is transparent so our grid or background shows */
-.game-pane {
+.game-pane
+{
     -fx-border-color: white;
     -fx-border-width: 1px;
     -fx-background-color: transparent;
 }
 
-/* Overlays (semi-transparent panels) */
-.overlay {
+.overlay
+{
     -fx-background-color: rgba(20, 20, 40, 0.92);
     -fx-border-color: #ff00ff;
     -fx-border-width: 1px;
@@ -40,111 +41,124 @@
     -fx-padding: 30px;
 }
 
-/* ScrollPane settings */
 .scroll-pane,
-.scroll-pane .viewport {
+.scroll-pane .viewport
+{
     -fx-background-color: transparent;
 }
-.scroll-pane > .corner {
+
+.scroll-pane > .corner
+{
     -fx-background-color: #1a1a2e;
 }
 
-/* === GRID LINES (for main menu background) === */
-.grid-line {
+.grid-line
+{
     -fx-stroke: rgba(255, 255, 255, 0.15);
     -fx-stroke-width: 1;
 }
 
-/* === NODES === */
-/* Base node style: use a very faint fill so labels are readable */
-.node {
+.node
+{
     -fx-stroke: rgba(0, 0, 0, 0.6);
     -fx-stroke-width: 1px;
     -fx-opacity: 0.95;
     -fx-effect: dropshadow(gaussian, gray, 10, 0.2, 0, 0);
 }
 
-/* Node state overrides (you may tone these down to keep the faint fills visible) */
-.node-active {
+.node-active
+{
     -fx-effect: dropshadow(gaussian, white, 25, 0.85, 0, 0) !important;
     -fx-opacity: 1 !important;
 }
-.node-waiting {
+
+.node-waiting
+{
     -fx-effect: dropshadow(gaussian, yellow, 22, 0.7, 0, 0) !important;
 }
-.node-buffer-glow {
+
+.node-buffer-glow
+{
     -fx-effect: dropshadow(gaussian, gold, 18, 0.55, 0, 0) !important;
 }
-.node-satisfied {
-    -fx-fill: rgba(0, 255, 127, 0.15) !important; /* Faint fill for satisfied state */
+
+.node-satisfied
+{
+    -fx-fill: rgba(0, 255, 127, 0.15) !important;
     -fx-effect: dropshadow(gaussian, #00ff7f, 15, 0.4, 0, 0) !important;
     -fx-opacity: 0.8 !important;
 }
 
-.node-satisfied-glow {
+.node-satisfied-glow
+{
     -fx-effect: dropshadow(gaussian, #00ff7f, 15, 0.4, 0, 0) !important;
 }
 
-.node-error {
-    -fx-fill: rgba(255, 0, 0, 0.15) !important; /* Faint red fill */
+.node-error
+{
+    -fx-fill: rgba(255, 0, 0, 0.15) !important;
     -fx-stroke: white !important;
     -fx-stroke-width: 2px !important;
     -fx-effect: dropshadow(gaussian, red, 25, 0.85, 0, 0) !important;
 }
 
-/* === INTERNAL NODE SYMBOLS === */
-.node-internal-symbol {
+.node-internal-symbol
+{
     -fx-font-family: 'Consolas', sans-serif;
     -fx-font-weight: bold;
     -fx-fill: black;
     -fx-text-alignment: center;
 }
 
-/* Processor internal panes */
 .processor-node .needs-pane .text,
 .processor-node .produces-pane .text,
-.sink-node .demand-indicator-pane .text {
+.sink-node .demand-indicator-pane .text
+{
     -fx-font-size: 10px;
     -fx-fill: white;
 }
-.processor-node .produces-pane .text {
+
+.processor-node .produces-pane .text
+{
     -fx-font-size: 16px;
     -fx-stroke: black;
     -fx-stroke-width: 0.6px;
 }
 
-/* Sink error symbol styling */
-.sink-error-symbol {
-    -fx-fill: white;
-    -fx-stroke: black;
-    -fx-stroke-width: 1.5;
+.sink-error-symbol
+{
+    -fx-text-fill: black;
     -fx-font-weight: bold;
     -fx-font-size: 24px;
 }
 
-/* Separator in processor node */
-.proc-separator {
+.proc-separator
+{
     -fx-stroke: rgba(255, 255, 255, 0.4);
     -fx-stroke-width: 1;
 }
 
-/* Internal panes (transparent) */
-.needs-pane, .produces-pane, .demand-indicator-pane, .buffer-pane {
+.needs-pane, .produces-pane, .demand-indicator-pane, .buffer-pane
+{
     -fx-background-color: transparent;
 }
 
-/* === CONNECTORS === */
-.connector {
+.connector
+{
     -fx-fill: #779;
     -fx-stroke: #aaa;
     -fx-stroke-width: 1;
     -fx-cursor: crosshair;
 }
-.connector:hover {
+
+.connector:hover
+{
     -fx-fill: white;
     -fx-effect: dropshadow(gaussian, white, 10, 0.6, 0, 0);
 }
-.connector-selected {
+
+.connector-selected
+{
     -fx-fill: lime;
     -fx-stroke: white;
     -fx-stroke-width: 1.5;
@@ -152,10 +166,8 @@
     -fx-cursor: default;
 }
 
-/* === PIPES === */
-/* Curved pipes with a faint glow. Reduce the curve’s control offset by about half
-   compared to earlier versions. */
-.pipe {
+.pipe
+{
     -fx-fill: transparent;
     -fx-stroke: #333;
     -fx-stroke-width: 2;
@@ -163,16 +175,20 @@
     -fx-stroke-line-join: round;
     -fx-opacity: 0.85;
 }
-.pipe-resource {
+
+.pipe-resource
+{
     -fx-stroke: white;
     -fx-effect: dropshadow(gaussian, grey, 15, 0.7, 0, 0);
 }
-.pipe-glow {
+
+.pipe-glow
+{
     -fx-effect: dropshadow(gaussian, violet, 20, 0.8, 0, 0);
 }
 
-/* === BUTTONS === */
-.button {
+.button
+{
     -fx-background-color: #2a2a3e;
     -fx-text-fill: white;
     -fx-font-family: 'Consolas', monospace;
@@ -184,75 +200,103 @@
     -fx-effect: dropshadow(gaussian, black, 3, 0.3, 0, 1);
     -fx-cursor: hand;
 }
-.button:hover {
+
+.button:hover
+{
     -fx-background-color: #3a3a4e;
     -fx-border-color: #0ff;
     -fx-effect: dropshadow(gaussian, #0ff, 12, 0.5, 0, 0);
 }
-.button:pressed {
+
+.button:pressed
+{
     -fx-background-color: #1a1a2e;
     -fx-effect: none;
     -fx-translate-y: 1;
 }
-.button:disabled {
+
+.button:disabled
+{
     -fx-opacity: 0.5;
     -fx-effect: none;
     -fx-cursor: default;
     -fx-border-color: #555;
 }
-.menu-button {
+
+.menu-button
+{
     -fx-pref-width: 200;
-    -fx-border-color: #0ff;
-}
-#game-start-stop-button {
-    -fx-border-color: #0f0;
-}
-#game-start-stop-button:hover {
-    -fx-border-color: white;
-    -fx-effect: dropshadow(gaussian, #0f0, 15, 0.6, 0, 0);
-}
-#game-reset-button {
-    -fx-border-color: yellow;
-}
-#game-reset-button:hover {
-    -fx-border-color: white;
-    -fx-effect: dropshadow(gaussian, yellow, 15, 0.6, 0, 0);
-}
-#next-level-button {
+    -fx-pref-height: 40;
     -fx-border-color: #0ff;
 }
 
-/* === OVERLAYS & LABELS === */
-.overlay-title {
+#game-start-stop-button
+{
+    -fx-border-color: #0f0;
+}
+
+#game-start-stop-button:hover
+{
+    -fx-border-color: white;
+    -fx-effect: dropshadow(gaussian, #0f0, 15, 0.6, 0, 0);
+}
+
+#game-reset-button
+{
+    -fx-border-color: yellow;
+}
+
+#game-reset-button:hover
+{
+    -fx-border-color: white;
+    -fx-effect: dropshadow(gaussian, yellow, 15, 0.6, 0, 0);
+}
+
+#next-level-button
+{
+    -fx-border-color: #0ff;
+}
+
+.overlay-title
+{
     -fx-text-fill: #0ff;
     -fx-font-size: 38px;
     -fx-font-weight: bold;
     -fx-effect: dropshadow(gaussian, #0ff, 6, 0.3, 0, 0);
 }
-.tutorial-text {
+
+.tutorial-text
+{
     -fx-fill: #e0e0e0;
     -fx-font-size: 14px;
     -fx-line-spacing: 4px;
+    -fx-padding: 0 10 10 10;
 }
-#final-score-label {
+
+#final-score-label
+{
     -fx-text-fill: yellow;
     -fx-font-size: 24px;
     -fx-font-weight: bold;
 }
-.info-label {
+
+.info-label
+{
     -fx-font-size: 14px;
     -fx-text-fill: #ddd;
     -fx-padding: 0 10px 0 0;
     -fx-effect: dropshadow(gaussian, black, 2, 0.4, 0, 1);
 }
 
-/* Score list view */
-#score-list-view {
+#score-list-view
+{
     -fx-background-color: rgba(0, 0, 0, 0.5);
     -fx-border-color: #43e97b;
     -fx-border-width: 1;
 }
-#score-list-view .list-cell {
+
+#score-list-view .list-cell
+{
     -fx-background-color: transparent;
     -fx-text-fill: #0ff;
     -fx-font-size: 16px;
@@ -261,30 +305,38 @@
     -fx-alignment: center-left;
 }
 
-/* === SCROLLBARS === */
-.scroll-bar > .track {
+.scroll-bar > .track
+{
     -fx-background-color: rgba(42, 42, 62, 0.5);
     -fx-border-color: transparent;
 }
-.scroll-bar > .thumb {
+
+.scroll-bar > .thumb
+{
     -fx-background-color: rgba(255, 0, 255, 0.7);
     -fx-background-radius: 6px;
     -fx-background-insets: 2;
 }
-.scroll-bar > .thumb:hover {
+
+.scroll-bar > .thumb:hover
+{
     -fx-background-color: rgba(255, 0, 255, 0.9);
 }
-.scroll-bar > .increment-button, .scroll-bar > .decrement-button {
+
+.scroll-bar > .increment-button, .scroll-bar > .decrement-button
+{
     -fx-background-color: transparent;
     -fx-border-color: transparent;
     -fx-padding: 2;
 }
-.scroll-pane > .corner {
+
+.scroll-pane > .corner
+{
     -fx-background-color: #1a1a2e;
 }
 
-/* === PROMPT LABEL === */
-.prompt-label {
+.prompt-label
+{
     -fx-text-fill: #fff;
     -fx-font-size: 14px;
     -fx-background-color: rgba(0, 0, 0, 0.5);
