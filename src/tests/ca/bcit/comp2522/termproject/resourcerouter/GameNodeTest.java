@@ -43,10 +43,11 @@ import org.junit.jupiter.api.Test;
  *
  * @version 1.0
  */
-public class GameNodeTest {
+final class GameNodeTest
+{
 
-    /**
-     * Dummy subclass of {@link GameNode} for testing.
+    /*
+     * Dummy subclass of GameNode for testing.
      * <p>
      * Provides trivial implementations of abstract methods.
      * </p>
@@ -61,46 +62,58 @@ public class GameNodeTest {
          * @param x  the x-coordinate of the node's center
          * @param y  the y-coordinate of the node's center
          */
-        public DummyGameNode(String id, double x, double y) {
+        public DummyGameNode(final String id,
+                             final double x,
+                             final double y)
+        {
             super(id, x, y);
         }
 
         @Override
-        protected Node createNodeBodyVisual() {
+        protected Node createNodeBodyVisual()
+        {
             return new Label("Body");
         }
 
         @Override
-        protected Shape createOutputConnectorVisual() {
+        protected Shape createOutputConnectorVisual()
+        {
             return new Circle(5);
         }
 
         @Override
-        protected Shape createInputConnectorVisual() {
+        protected Shape createInputConnectorVisual()
+        {
             return new Circle(5);
         }
 
         @Override
-        protected Label createInfoLabelVisual() {
+        protected Label createInfoLabelVisual()
+        {
             return new Label("Info");
         }
 
         @Override
-        public Point2D getInputConnectorOffset() {
+        public Point2D getInputConnectorOffset()
+        {
             return new Point2D(0, 0);
         }
 
         @Override
-        public Point2D getOutputConnectorOffset() {
+        public Point2D getOutputConnectorOffset()
+        {
             return new Point2D(0, 0);
         }
 
         @Override
-        public void resetState() {
+        public void resetState()
+        {
         }
 
         @Override
-        public void update(double deltaTime, GameController controller) {
+        public void update(final double deltaTime,
+                           GameController controller)
+        {
         }
     }
 
@@ -112,9 +125,16 @@ public class GameNodeTest {
      */
     @Test
     @DisplayName("Positive Test: Valid Construction and Getters")
-    public void testValidConstruction() {
-        DummyGameNode node = new DummyGameNode("node1", 100, 200);
-        assertEquals("node1", node.getId(), "ID should match the provided value.");
+    public void testValidConstruction()
+    {
+        final DummyGameNode node;
+        node = new DummyGameNode("node1",
+                                 100,
+                                 200);
+
+        assertEquals("node1",
+                     node.getId(),
+                     "ID should match the provided value.");
     }
 
     /**
@@ -122,10 +142,17 @@ public class GameNodeTest {
      */
     @Test
     @DisplayName("Positive Test: setId Updates Node ID")
-    public void testSetId() {
-        DummyGameNode node = new DummyGameNode("node1", 50, 50);
+    public void testSetId()
+    {
+        final DummyGameNode node;
+        node = new DummyGameNode("node1",
+                                 50,
+                                 50);
+
         node.setId("newNodeId");
-        assertEquals("newNodeId", node.getId(), "ID should be updated to the new value.");
+        assertEquals("newNodeId",
+                     node.getId(),
+                     "ID should be updated to the new value.");
     }
 
     /**
@@ -134,18 +161,28 @@ public class GameNodeTest {
      */
     @Test
     @DisplayName("Positive Test: equals and hashCode")
-    public void testEqualsAndHashCode() {
-        DummyGameNode node1 = new DummyGameNode("node1", 10, 10);
-        DummyGameNode node2 = new DummyGameNode("node1", 20, 20); // Different coordinates, same ID.
-        DummyGameNode node3 = new DummyGameNode("node3", 10, 10);
+    public void testEqualsAndHashCode()
+    {
+        final DummyGameNode node1;
+        final DummyGameNode node2;
+        final DummyGameNode node3;
+
+        node1 = new DummyGameNode("node1", 10, 10);
+        node2 = new DummyGameNode("node1", 20, 20);
+        node3 = new DummyGameNode("node3", 10, 10);
 
         // Nodes with the same ID should be equal.
-        assertEquals(node1, node2, "Nodes with the same ID should be equal.");
+        assertEquals(node1,
+                     node2,
+                     "Nodes with the same ID should be equal.");
         // And have the same hash code.
-        assertEquals(node1.hashCode(), node2.hashCode(), "Nodes with the same ID should have the same hash code.");
+        assertEquals(node1.hashCode(), node2.hashCode(),
+                     "Nodes with the same ID should have the same hash code.");
 
         // Nodes with different IDs should not be equal.
-        assertNotEquals(node1, node3, "Nodes with different IDs should not be equal.");
+        assertNotEquals(node1,
+                        node3,
+                        "Nodes with different IDs should not be equal.");
     }
 
     // ----------------------- Negative Tests -----------------------
@@ -156,11 +193,14 @@ public class GameNodeTest {
      */
     @Test
     @DisplayName("Negative Test: Constructor with Null ID")
-    public void testConstructorNullId() {
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            new DummyGameNode(null, 0, 0);
-        });
-        assertTrue(exception.getMessage().contains("Node ID empty"), "Expected error message for null ID.");
+    public void testConstructorNullId()
+    {
+        final Exception exception;
+        exception = assertThrows(IllegalArgumentException.class, () ->
+                new DummyGameNode(null, 0, 0));
+
+        assertTrue(exception.getMessage().contains("Node ID empty"),
+                   "Expected error message for null ID.");
     }
 
     /**
@@ -169,11 +209,14 @@ public class GameNodeTest {
      */
     @Test
     @DisplayName("Negative Test: Constructor with Empty ID")
-    public void testConstructorEmptyId() {
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            new DummyGameNode("", 0, 0);
-        });
-        assertTrue(exception.getMessage().contains("Node ID empty"), "Expected error message for empty ID.");
+    public void testConstructorEmptyId()
+    {
+        final Exception exception;
+        exception = assertThrows(IllegalArgumentException.class, () ->
+                new DummyGameNode("", 0, 0));
+
+        assertTrue(exception.getMessage().contains("Node ID empty"),
+                   "Expected error message for empty ID.");
     }
 
     /**
@@ -182,18 +225,23 @@ public class GameNodeTest {
      */
     @Test
     @DisplayName("Negative Test: setId with Invalid Value")
-    public void testSetIdInvalid() {
-        DummyGameNode node = new DummyGameNode("node1", 0, 0);
+    public void testSetIdInvalid()
+    {
+        final DummyGameNode node;
+        node = new DummyGameNode("node1", 0, 0);
 
-        Exception exceptionNull = assertThrows(IllegalArgumentException.class, () -> {
-            node.setId(null);
-        });
+        final Exception exceptionNull;
+        final Exception exceptionEmpty;
+
+        exceptionNull = assertThrows(IllegalArgumentException.class, () ->
+                node.setId(null));
+
         assertTrue(exceptionNull.getMessage().contains("New ID cannot be null or empty"),
                    "Expected error message for null new ID.");
 
-        Exception exceptionEmpty = assertThrows(IllegalArgumentException.class, () -> {
-            node.setId("   ");
-        });
+        exceptionEmpty = assertThrows(IllegalArgumentException.class, () ->
+                node.setId("   "));
+
         assertTrue(exceptionEmpty.getMessage().contains("New ID cannot be null or empty"),
                    "Expected error message for empty new ID.");
     }
@@ -204,11 +252,14 @@ public class GameNodeTest {
      */
     @Test
     @DisplayName("Negative Test: Constructor with Negative X")
-    public void testConstructorNegativeX() {
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            new DummyGameNode("node1", -1, 10);
-        });
-        assertTrue(exception.getMessage().contains("x cannot be negative"), "Expected error message for negative x.");
+    public void testConstructorNegativeX()
+    {
+        final Exception exception;
+        exception = assertThrows(IllegalArgumentException.class, () ->
+                new DummyGameNode("node1", -1, 10));
+
+        assertTrue(exception.getMessage().contains("x cannot be negative"),
+                   "Expected error message for negative x.");
     }
 
     /**
@@ -217,10 +268,13 @@ public class GameNodeTest {
      */
     @Test
     @DisplayName("Negative Test: Constructor with Negative Y")
-    public void testConstructorNegativeY() {
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            new DummyGameNode("node1", 10, -5);
-        });
-        assertTrue(exception.getMessage().contains("y cannot be negative"), "Expected error message for negative y.");
+    public void testConstructorNegativeY()
+    {
+        final Exception exception;
+        exception = assertThrows(IllegalArgumentException.class, () ->
+                new DummyGameNode("node1", 10, -5));
+
+        assertTrue(exception.getMessage().contains("y cannot be negative"),
+                   "Expected error message for negative y.");
     }
 }
