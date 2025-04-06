@@ -57,7 +57,9 @@ import java.util.Collections;
 public final class LevelManager
 {
 
-    private static final int    INITIAL_VALUE                = 0;
+    private static final int    LOWER_BOUND_LIMIT            = 0;
+    private static final int    MAX_X_VALUE                  = 900;
+    private static final int    MAX_Y_VALUE                  = 600;
     public static final double  DEFAULT_TIME_LIMIT_SECONDS   = 60.0;
 
     private final List<NodeDefinition>  nodeDefinitions;
@@ -92,49 +94,13 @@ public final class LevelManager
     }
 
     /**
-     * Returns the unmodifiable list of node definitions.
-     *
-     * @return the list of NodeDefinition objects.
-     */
-    public List<NodeDefinition> getNodeDefinitions()
-    {
-        final List<NodeDefinition> result;
-        result = nodeDefinitions;
-        return result;
-    }
-
-    /**
-     * Returns the time limit for the level in seconds.
-     *
-     * @return the time limit in seconds.
-     */
-    public double getTimeLimitSeconds()
-    {
-        final double result;
-        result = timeLimitSeconds;
-        return result;
-    }
-
-    /**
-     * Returns the prompt for the level.
-     *
-     * @return the prompt as a String.
-     */
-    public String getPrompt()
-    {
-        final String result;
-        result = prompt;
-        return result;
-    }
-
-    /**
      * Validates the level numbers.
      *
      * @param levelNumber the level number the user is on
      */
     private void validateLevelNumber(final int levelNumber)
     {
-        if (levelNumber <= INITIAL_VALUE)
+        if (levelNumber <= LOWER_BOUND_LIMIT)
         {
             throw new IllegalArgumentException("Level number must be positive.");
         }
@@ -147,10 +113,49 @@ public final class LevelManager
      */
     private void validateTimeLimitSeconds(final double timeLimitSeconds)
     {
-        if (timeLimitSeconds <= INITIAL_VALUE)
+        if (timeLimitSeconds <= LOWER_BOUND_LIMIT)
         {
             throw new IllegalArgumentException("Time limit must be positive.");
         }
+    }
+
+    /**
+     * Returns the unmodifiable list of node definitions.
+     *
+     * @return the list of NodeDefinition objects.
+     */
+    public List<NodeDefinition> getNodeDefinitions()
+    {
+        final List<NodeDefinition> result;
+        result = nodeDefinitions;
+
+        return result;
+    }
+
+    /**
+     * Returns the time limit for the level in seconds.
+     *
+     * @return the time limit in seconds.
+     */
+    public double getTimeLimitSeconds()
+    {
+        final double result;
+        result = timeLimitSeconds;
+
+        return result;
+    }
+
+    /**
+     * Returns the prompt for the level.
+     *
+     * @return the prompt as a String.
+     */
+    public String getPrompt()
+    {
+        final String result;
+        result = prompt;
+
+        return result;
     }
 
     /**
@@ -194,6 +199,48 @@ public final class LevelManager
             this.x    = x;
             this.y    = y;
             this.config = config;
+        }
+
+        /*
+         * Validates that 'type' is neither null nor empty.
+         */
+        private static void validateType(final String type)
+        {
+            if (type == null || type.isBlank())
+            {
+                throw new IllegalArgumentException("NodeDefinition 'type' cannot be null/blank.");
+            }
+        }
+
+        /*
+         * Validates that 'id' is neither null nor empty.
+         */
+        private static void validateId(final String id)
+        {
+            if (id == null || id.isBlank())
+            {
+                throw new IllegalArgumentException("NodeDefinition 'id' cannot be null/blank.");
+            }
+        }
+
+        /*
+         * Validates that x and y are numbers.
+         */
+        private static void validateCoordinates(final double x,
+                                                final double y)
+        {
+            if (Double.isNaN(x)     ||
+                x <= LOWER_BOUND_LIMIT ||
+                x > MAX_X_VALUE)
+            {
+                throw new IllegalArgumentException("NodeDefinition 'x' is invalid.");
+            }
+            if (Double.isNaN(y)     ||
+                y <= LOWER_BOUND_LIMIT ||
+                y > MAX_Y_VALUE)
+            {
+                throw new IllegalArgumentException("NodeDefinition 'y' is invalid.");
+            }
         }
 
         /**
@@ -244,44 +291,6 @@ public final class LevelManager
         public String getConfig()
         {
             return config;
-        }
-
-        /*
-         * Validates that 'type' is neither null nor empty.
-         */
-        private static void validateType(final String type)
-        {
-            if (type == null || type.isBlank())
-            {
-                throw new IllegalArgumentException("NodeDefinition 'type' cannot be null/blank.");
-            }
-        }
-
-        /*
-         * Validates that 'id' is neither null nor empty.
-         */
-        private static void validateId(final String id)
-        {
-            if (id == null || id.isBlank())
-            {
-                throw new IllegalArgumentException("NodeDefinition 'id' cannot be null/blank.");
-            }
-        }
-
-        /*
-         * Validates that x and y are numbers.
-         */
-        private static void validateCoordinates(final double x,
-                                                final double y)
-        {
-            if (Double.isNaN(x) || x <= 0 || x >= 900)
-            {
-                throw new IllegalArgumentException("NodeDefinition 'x' is invalid.");
-            }
-            if (Double.isNaN(y) || y <= 0 || y >= 600)
-            {
-                throw new IllegalArgumentException("NodeDefinition 'y' is invalid.");
-            }
         }
     }
 }

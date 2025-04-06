@@ -42,7 +42,7 @@ final class Score
     private static final String correctSecondAttemptText    = "Correct Second Attempts: ";
     private static final String incorrectAttemptsText       = "Incorrect Attempts: ";
 
-    private static final DateTimeFormatter formatter    =
+    private static final DateTimeFormatter formatter =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final LocalDateTime dateTimePlayed;
@@ -105,6 +105,37 @@ final class Score
         this.numCorrectFirstAttempt     = numCorrectFirstAttempt;
         this.numCorrectSecondAttempt    = numCorrectSecondAttempt;
         this.numIncorrectTwoAttempts    = numIncorrectTwoAttempts;
+    }
+
+    /**
+     * Shared validation logic for numeric stats.
+     *
+     * @param numGamesPlayed          The number of games played.
+     * @param numCorrectFirstAttempt  The number of correct answers on the first try.
+     * @param numCorrectSecondAttempt The number of correct answers on the second try.
+     * @param numIncorrectTwoAttempts The number of incorrect answers after two attempts.
+     */
+    private static void validateStats(final int numGamesPlayed,
+            final int numCorrectFirstAttempt,
+            final int numCorrectSecondAttempt,
+            final int numIncorrectTwoAttempts)
+    {
+        if (numGamesPlayed < 0)
+        {
+            throw new IllegalArgumentException("GamesPlayed cannot be negative.");
+        }
+        if (numCorrectFirstAttempt < 0)
+        {
+            throw new IllegalArgumentException("CorrectFirstAttempt cannot be negative.");
+        }
+        if (numCorrectSecondAttempt < 0)
+        {
+            throw new IllegalArgumentException("CorrectSecondAttempt cannot be negative.");
+        }
+        if (numIncorrectTwoAttempts < 0)
+        {
+            throw new IllegalArgumentException("IncorrectTwoAttempts cannot be negative.");
+        }
     }
 
     /*
@@ -186,22 +217,22 @@ final class Score
     {
         try
         {
-            final List<Score> scores;
-            final Score highestScore;
-            final double currentAvg;
+            final List<Score>   scores;
+            final Score         highestScore;
+            final double        currentAvg;
 
             scores = readScoresFromFile(fileName);
 
             highestScore = scores.stream()
-                    .max(Comparator.comparingDouble(Score::getAverageScorePerGame))
-                    .orElse(null);
+                                 .max(Comparator.comparingDouble(Score::getAverageScorePerGame))
+                                 .orElse(null);
 
             currentAvg = currentScore.getAverageScorePerGame();
 
             if (highestScore == null)
             {
                 System.out.printf("CONGRATULATIONS! You are the new high score with an average of " +
-                                  "%.2f points per game; no previous record exists.%n", currentAvg);
+                                  "%.2f points per game;\nNo previous record exists.%n", currentAvg);
             }
             else
             {
@@ -214,8 +245,8 @@ final class Score
                 if (currentAvg > highestAvg)
                 {
                     System.out.printf("CONGRATULATIONS! You are the new high score with an average of" +
-                                      " %.2f points per game; " +
-                                      "the previous record was %.2f points per game on %s.%n",
+                                      " %.2f points per game;\n " +
+                                      "The previous record was %.2f points per game on %s.%n",
                                       currentAvg, highestAvg, highScoreDateTime);
                 }
                 else
@@ -263,7 +294,8 @@ final class Score
 
                     record.clear();
                 }
-            } else
+            }
+            else
             {
                 record.add(line);
             }
@@ -287,7 +319,8 @@ final class Score
     int getScore()
     {
         final int totalScore;
-        totalScore = (numCorrectFirstAttempt * FIRST_CORRECT_LINE_INDEX) + numCorrectSecondAttempt;
+        totalScore = (numCorrectFirstAttempt * FIRST_CORRECT_LINE_INDEX) +
+                      numCorrectSecondAttempt;
 
         return totalScore;
     }
@@ -326,7 +359,8 @@ final class Score
         if (numGamesPlayed == GAMES_LINE_INDEX)
         {
             sb.append("Score: ").append(getScore()).append(" points\n");
-        } else
+        }
+        else
         {
             sb.append("Total Score: ").append(getScore()).append("\n");
             sb.append("Average Score Per Game: ").append(String.format("%.2f", getAverageScorePerGame()));
@@ -336,36 +370,5 @@ final class Score
         gameInfo = sb.toString();
 
         return gameInfo;
-    }
-
-    /**
-     * Shared validation logic for numeric stats.
-     *
-     * @param numGamesPlayed          The number of games played.
-     * @param numCorrectFirstAttempt  The number of correct answers on the first try.
-     * @param numCorrectSecondAttempt The number of correct answers on the second try.
-     * @param numIncorrectTwoAttempts The number of incorrect answers after two attempts.
-     */
-    private static void validateStats(final int numGamesPlayed,
-                                      final int numCorrectFirstAttempt,
-                                      final int numCorrectSecondAttempt,
-                                      final int numIncorrectTwoAttempts)
-    {
-        if (numGamesPlayed < 0)
-        {
-            throw new IllegalArgumentException("GamesPlayed cannot be negative.");
-        }
-        if (numCorrectFirstAttempt < 0)
-        {
-            throw new IllegalArgumentException("CorrectFirstAttempt cannot be negative.");
-        }
-        if (numCorrectSecondAttempt < 0)
-        {
-            throw new IllegalArgumentException("CorrectSecondAttempt cannot be negative.");
-        }
-        if (numIncorrectTwoAttempts < 0)
-        {
-            throw new IllegalArgumentException("IncorrectTwoAttempts cannot be negative.");
-        }
     }
 }

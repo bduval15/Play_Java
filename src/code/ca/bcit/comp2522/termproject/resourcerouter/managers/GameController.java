@@ -154,6 +154,28 @@ public final class GameController
     }
 
     /*
+     * Ensures the ResourceRouterMainMenu reference is not null.
+     *
+     * @param menu the ResourceRouterMainMenu instance
+     * @throws NullPointerException if {@code menu} is null
+     */
+    private static void validateResourceRouterMainMenu(final ResourceRouterMainMenu menu)
+    {
+        Objects.requireNonNull(menu, "ResourceRouterMainMenu cannot be null");
+    }
+
+    /*
+     * Ensures the Pane is not null.
+     *
+     * @param pane the Pane instance to validate
+     * @throws NullPointerException if {@code pane} is null
+     */
+    private static void validateGamePane(final Pane pane)
+    {
+        Objects.requireNonNull(pane, "GamePane cannot be null");
+    }
+
+    /*
      * Identifies available levels.
      *
      * @return an unmodifiable list of available level numbers.
@@ -246,6 +268,7 @@ public final class GameController
         {
             timeRemaining -= DELTA_TIME;
             resourceRouterMainMenu.updateTimer(timeRemaining);
+
             if (timeRemaining <= ZERO_DOUBLE)
             {
                 final boolean notAllSatisfied;
@@ -265,7 +288,8 @@ public final class GameController
                 }
             }
         }
-        if (simulationRunning || currentGameState.equals(GameState.LEVEL_COMPLETE))
+        if (simulationRunning ||
+            currentGameState.equals(GameState.LEVEL_COMPLETE))
         {
             simulationTimeElapsed += DELTA_TIME;
             pipes.forEach(Pipe::resetTickStatus);
@@ -275,6 +299,7 @@ public final class GameController
                 for (final GameNode node : gameNodes)
                 {
                     node.update(DELTA_TIME, this);
+
                     if (currentGameState.equals(GameState.PLAYING) &&
                        (node instanceof SinkNode sn && sn.isInErrorState()))
                     {
@@ -282,7 +307,8 @@ public final class GameController
                         break;
                     }
                 }
-            } catch (final Exception e)
+            }
+            catch (final Exception e)
             {
                 handleGameOver();
                 return;
@@ -301,7 +327,8 @@ public final class GameController
      */
     private void checkWinCondition()
     {
-        if (currentLevelManager == null || !simulationRunning)
+        if (currentLevelManager == null ||
+           !simulationRunning)
         {
             return;
         }
@@ -324,7 +351,8 @@ public final class GameController
      */
     private void recordLevelScore()
     {
-        if (currentLevelManager == null || simulationTimeElapsed <= ZERO_DOUBLE)
+        if (currentLevelManager == null ||
+            simulationTimeElapsed <= ZERO_DOUBLE)
         {
             return;
         }
@@ -346,7 +374,9 @@ public final class GameController
         resourceRouterMainMenu.updateScoreDisplay(currentSessionScore);
 
         resourceRouterMainMenu.updatePrompt(
-                "You beat the level and gained " + finalScore + " points! Proceed to the next level!"
+                "You beat the level and gained " +
+                finalScore +
+                " points! Proceed to the next level!"
         );
     }
 
@@ -370,19 +400,22 @@ public final class GameController
             currentLevelManager = levelManager;
             resourceRouterMainMenu.updateLevelDisplay(currentLevelIndex + SECOND_INDEX);
             resourceRouterMainMenu.updatePrompt(currentLevelManager.getPrompt());
+
             try
             {
                 instantiateLevelNodes();
-                timeRemaining = currentLevelManager.getTimeLimitSeconds();
-                simulationTimeElapsed = ZERO_DOUBLE;
-                simulationRunning = false;
-                ticksSincePipeChange = DEFAULT_VALUE;
+                timeRemaining           = currentLevelManager.getTimeLimitSeconds();
+                simulationTimeElapsed   = ZERO_DOUBLE;
+                simulationRunning       = false;
+                ticksSincePipeChange    = DEFAULT_VALUE;
+
                 resourceRouterMainMenu.updateTimer(timeRemaining);
                 resourceRouterMainMenu.updateStatus("Level " +
                                                    (currentLevelIndex + SECOND_INDEX) +
                                                     " ready. Connect & start!");
                 changeGameState(GameState.PLAYING);
-                resourceRouterMainMenu.updateButtonStates(false, false);
+                resourceRouterMainMenu.updateButtonStates(false,
+                                                          false);
 
                 if (gameLoop.getStatus() != Animation.Status.RUNNING)
                 {
@@ -430,6 +463,7 @@ public final class GameController
             uniqueId = originalId;
 
             int suffix = INITIAL_SUFFIX;
+
             while (usedIds.contains(uniqueId))
             {
                 uniqueId = originalId + "_" + suffix;
@@ -466,11 +500,14 @@ public final class GameController
         {
             pipe.removeAllParticles();
         }
-        final List<Object> pipeVisuals;
+
+        final List<Node> pipeVisuals;
         pipeVisuals = pipes.stream()
-                           .map(Pipe::getLineVisual)
-                           .filter(Objects::nonNull)
-                           .toList();
+                            .map(Pipe::getLineVisual)
+                            .filter(Objects::nonNull)
+                            .filter(Node.class::isInstance)
+                            .map(Node.class::cast)
+                            .toList();
 
         gamePane.getChildren().removeAll(pipeVisuals);
         pipes.forEach(pipe -> pipe.setLineVisual(null));
@@ -546,8 +583,10 @@ public final class GameController
             changeGameState(GameState.MENU);
             return;
         }
-        this.levelSequenceForSession = shuffled.subList(DEFAULT_VALUE, numLevels);
-        this.currentLevelIndex = INITIAL_LEVEL_INDEX;
+        this.levelSequenceForSession    = shuffled.subList(DEFAULT_VALUE,
+                                                           numLevels);
+        this.currentLevelIndex          = INITIAL_LEVEL_INDEX;
+
         loadNextLevel();
     }
 
@@ -559,13 +598,14 @@ public final class GameController
         stopSimulation("Loading next level");
         currentLevelIndex++;
 
-        if (levelSequenceForSession != null && currentLevelIndex < levelSequenceForSession.size())
+        if (levelSequenceForSession != null &&
+            currentLevelIndex < levelSequenceForSession.size())
         {
             final int levelNum;
             final boolean success;
 
-            levelNum = levelSequenceForSession.get(currentLevelIndex);
-            success = loadLevelInternal(levelNum);
+            levelNum    = levelSequenceForSession.get(currentLevelIndex);
+            success     = loadLevelInternal(levelNum);
 
             if (!success)
             {
@@ -592,9 +632,10 @@ public final class GameController
         }
 
         resourceRouterMainMenu.updateStatus("Simulation Running...");
-        simulationRunning = true;
-        simulationTimeElapsed = ZERO_DOUBLE;
-        ticksSincePipeChange = DEFAULT_VALUE;
+
+        simulationRunning       = true;
+        simulationTimeElapsed   = ZERO_DOUBLE;
+        ticksSincePipeChange    = DEFAULT_VALUE;
 
         if (gameLoop.getStatus() != Animation.Status.RUNNING)
         {
@@ -713,7 +754,8 @@ public final class GameController
             return;
         }
 
-        if (!(isOutputConnector(startConnectorVisual) && isInputConnector(endConnectorVisual)))
+        if (!(isOutputConnector(startConnectorVisual) &&
+              isInputConnector(endConnectorVisual)))
         {
             resourceRouterMainMenu.updateStatus("Invalid direction (Use OUT->IN)");
             return;
@@ -724,8 +766,8 @@ public final class GameController
             if (endNode.getIncomingPipes().size() >= MAX_OUTGOING_PIPES)
             {
                 resourceRouterMainMenu.updateStatus("Sink node '" +
-                                                            endNode.getId() +
-                                                            "' already has two inputs.");
+                                                    endNode.getId() +
+                                                    "' already has two inputs.");
                 return;
             }
         }
@@ -745,8 +787,6 @@ public final class GameController
             final Point2D sp;
             final Point2D ep;
             final Line line;
-            final double distance;
-            final double controlOffset;
             final Pipe newPipe;
 
             sp = startNode.getOutputConnectorCenter();
@@ -758,7 +798,7 @@ public final class GameController
             line.setEndX(ep.getX());
             line.setEndY(ep.getY());
 
-            distance = sp.distance(ep);
+            sp.distance(ep);
 
             line.setId(Pipe.PIPE_ID_PREFIX + startNode.getId() + "_" + endNode.getId());
             line.getStyleClass().add(Pipe.BASE_STYLE_CLASS);
@@ -850,6 +890,7 @@ public final class GameController
     {
         final GameNode result;
         result = nodeMap.get(id);
+
         return result;
     }
 
@@ -865,13 +906,15 @@ public final class GameController
         {
             return null;
         }
+
         final String vid;
         final int idx;
 
         vid = cv.getId();
         idx = vid.lastIndexOf('-');
 
-        if (idx > 0 && idx < vid.length() - SECOND_INDEX)
+        if (idx > DEFAULT_VALUE &&
+            idx < vid.length() - SECOND_INDEX)
         {
             final String result;
             result = vid.substring(idx + SECOND_INDEX);
@@ -894,6 +937,7 @@ public final class GameController
         }
 
         final boolean result;
+
         result = fx.getId().startsWith(GameNode.NODE_ID_PREFIX_CONNECTOR_IN) ||
                  fx.getId().startsWith(GameNode.NODE_ID_PREFIX_CONNECTOR_OUT);
 
@@ -909,7 +953,9 @@ public final class GameController
     public boolean isOutputCapableNode(final GameNode n)
     {
         final boolean result;
-        result = (n instanceof SourceNode || n instanceof ProcessorNode);
+
+        result = (n instanceof SourceNode ||
+                  n instanceof ProcessorNode);
 
         return result;
     }
@@ -923,7 +969,9 @@ public final class GameController
     public boolean isInputCapableNode(final GameNode n)
     {
         final boolean result;
-        result = (n instanceof ProcessorNode || n instanceof SinkNode);
+
+        result = (n instanceof ProcessorNode ||
+                  n instanceof SinkNode);
 
         return result;
     }
@@ -937,7 +985,8 @@ public final class GameController
     public boolean isOutputConnector(final Node fx)
     {
         final boolean result;
-        result = fx != null && fx.getId() != null &&
+        result = fx != null &&
+                 fx.getId() != null &&
                  fx.getId().startsWith(GameNode.NODE_ID_PREFIX_CONNECTOR_OUT);
 
         return result;
@@ -1030,27 +1079,5 @@ public final class GameController
     public String getId()
     {
         return id;
-    }
-
-    /*
-     * Ensures the ResourceRouterMainMenu reference is not null.
-     *
-     * @param menu the ResourceRouterMainMenu instance
-     * @throws NullPointerException if {@code menu} is null
-     */
-    private static void validateResourceRouterMainMenu(final ResourceRouterMainMenu menu)
-    {
-        Objects.requireNonNull(menu, "ResourceRouterMainMenu cannot be null");
-    }
-
-    /*
-     * Ensures the Pane is not null.
-     *
-     * @param pane the Pane instance to validate
-     * @throws NullPointerException if {@code pane} is null
-     */
-    private static void validateGamePane(final Pane pane)
-    {
-        Objects.requireNonNull(pane, "GamePane cannot be null");
     }
 }

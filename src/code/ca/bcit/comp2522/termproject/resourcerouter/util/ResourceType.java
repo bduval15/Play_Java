@@ -72,11 +72,24 @@ public enum ResourceType
      *
      * @param displayColor the JavaFX Color that visually represents this resource type in the game UI.
      */
-    ResourceType(Color displayColor)
+    ResourceType(final Color displayColor)
     {
         validateDisplayColor(displayColor);
 
         this.displayColor = displayColor;
+    }
+
+    /*
+     * Validates that the given display color is not null.
+     *
+     * @param displayColor the color to validate
+     */
+    private static void validateDisplayColor(final Color displayColor)
+    {
+        if (displayColor == null)
+        {
+            throw new IllegalArgumentException("displayColor cannot be null");
+        }
     }
 
     /**
@@ -90,9 +103,11 @@ public enum ResourceType
      * @param text the string to convert into a ResourceType.
      * @return the matching ResourceType, or null if the input is invalid or does not match any known type.
      */
-    public static ResourceType getResourceType(String text)
+    public static ResourceType getResourceType(final String text)
     {
-        if (text == null || text.trim().isEmpty())
+        if (text == null ||
+            text.trim().isEmpty())
+
             return null;
         try
         {
@@ -100,7 +115,8 @@ public enum ResourceType
             type = ResourceType.valueOf(text.trim().toUpperCase());
 
             return type;
-        } catch (IllegalArgumentException e)
+        }
+        catch (final IllegalArgumentException e)
         {
             System.err.println("Warning: Unknown ResourceType string: " + text);
             return null;
@@ -116,17 +132,4 @@ public enum ResourceType
     {
         return displayColor;
     }
-
-    /*
-     * Validates that the given display color is not null.
-     *
-     * @param displayColor the color to validate
-     */
-    private static void validateDisplayColor(Color displayColor)
-    {
-        if (displayColor == null)
-        {
-            throw new IllegalArgumentException("displayColor cannot be null");
-        }
-    }
-    }
+}

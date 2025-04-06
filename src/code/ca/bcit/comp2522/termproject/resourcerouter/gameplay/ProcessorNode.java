@@ -135,47 +135,155 @@ public final class ProcessorNode
     }
 
     /*
-     * Consumes incoming resources from pipes.
-     * If an unexpected resource is received or if an extra resource would exceed the recipe,
-     * sets the error state, updates visuals, and stops the simulation.
+     * Validates the processing delay value.
      *
-     * @param gc the GameController.
-     * @return true if consumption occurred without error; false otherwise.
+     * @param delay the processing delay (in ticks)
+     * @param nodeId the identifier of the node (used for error messages)
+     * @throws IllegalArgumentException if delay is negative
      */
-    private boolean consumeInputs(final GameController gc) {
+    private static void validateDelay(final int delay,
+                                      final String nodeId)
+    {
+        if (delay < DEFAULT_VALUE)
+        {
+            throw new IllegalArgumentException(
+                    "Processing delay must be non-negative for node " + nodeId
+            );
+        }
+    }
+
+    /*
+     * Validates the recipe map for required input resources.
+     *
+     * @param recipe the map of resources required by this processor
+     * @param nodeId the identifier of the node (used for error messages)
+     *
+     * @throws NullPointerException     if recipe is null
+     * @throws IllegalArgumentException if the recipe is empty or has invalid entries
+     */
+    private static void validateRecipe(final Map<ResourceType, Integer> recipe,
+                                       final String nodeId)
+    {
+        Objects.requireNonNull(recipe,
+                               "Recipe cannot be null for node " +
+                               nodeId);
+
+        if (recipe.isEmpty())
+        {
+            throw new IllegalArgumentException("Recipe is empty for node " +
+                                               nodeId);
+        }
+
+        for (final Map.Entry<ResourceType, Integer> entry : recipe.entrySet())
+        {
+            final ResourceType resourceType;
+            final Integer      quantity;
+
+            resourceType    = entry.getKey();
+            quantity        = entry.getValue();
+
+            if (resourceType == null)
+            {
+                throw new IllegalArgumentException(
+                        "Recipe contains a null ResourceType for node " + nodeId
+                );
+            }
+            if (quantity == null || quantity <= DEFAULT_VALUE)
+            {
+                throw new IllegalArgumentException(
+                        "Invalid quantity (" + quantity + ") for ResourceType " +
+                         resourceType + " in node " + nodeId
+                );
+            }
+        }
+    }
+
+    /*
+     * Validates the output resource type.
+     *
+     * @param output the ResourceType produced by this processor
+     * @param nodeId the identifier of the node (used for error messages)
+     *
+     * @throws NullPointerException if output is null
+     */
+    private static void validateOutput(final ResourceType output,
+                                       final String nodeId)
+    {
+        Objects.requireNonNull(output, "Output resource cannot be null for node " +
+                               nodeId);
+    }
+
+    /*
+     * Consumes resources from all incoming pipes and updates the processor's input buffer.
+     *
+     * <p>
+     * This method iterates over a copy of the list of incoming
+     * pipes and retrieves the current resource from each pipe.
+     * For each resource:
+     * </p>
+     * <ul>
+     *   <li>
+     *     If the resource is not part of the processor's expected input recipe, the method sets an error state,
+     *     updates the visual representation, and stops the simulation using the provided GameController.
+     *   </li>
+     *   <li>
+     *     If the resource is expected, the method checks the current count
+     *     in the input buffer against the required amount.
+     *     If the buffer count is below the required amount, the resource count is increased.
+     *   </li>
+     * </ul>
+     * <p>
+     * Regardless of the outcome, the resource is cleared from the pipe and the pipe's visual state is updated.
+     * </p>
+     *
+     * @param gc the GameController managing the simulation,
+     *           which is used to stop the simulation if an unexpected resource is encountered.
+     *
+     * @return true if at least one resource consumed without error;
+     *         false if an error occurred during consumption.
+     */
+    private boolean consumeInputs(final GameController gc)
+    {
         boolean consumed = false;
 
-        // Create a copy of the incoming pipes to avoid concurrent modification issues.
-        for (final Pipe p : new ArrayList<>(incomingPipes)) {
-            final ResourceType resourceType = p.getCurrentResource();
+        for (final Pipe p : new ArrayList<>(incomingPipes))
+        {
+            final ResourceType resourceType;
+            resourceType = p.getCurrentResource();
 
-            if (resourceType != null) {
-                // If the resource is not part of the recipe, it's an unexpected input.
-                if (!inputRecipe.containsKey(resourceType)) {
+            if (resourceType != null)
+            {
+                if (!inputRecipe.containsKey(resourceType))
+                {
                     errorState = true;
+
                     updateVisualState();
-                    gc.stopSimulation("Processor " + getId() + " error: unexpected input " + resourceType);
+
+                    gc.stopSimulation("Processor " + getId() +
+                                              " error: unexpected input " +
+                                              resourceType);
+
                     return false;
                 }
 
-                final int current = inputBuffer.getOrDefault(resourceType, DEFAULT_VALUE);
-                final int required = inputRecipe.get(resourceType);
+                final int current;
+                final int required;
 
-                // If we still need this resource, accept and increment the count.
-                if (current < required) {
+                current     = inputBuffer.getOrDefault(resourceType, DEFAULT_VALUE);
+                required    = inputRecipe.get(resourceType);
+
+                if (current < required)
+                {
                     inputBuffer.merge(resourceType, MIN_DELAY_TICKS, Integer::sum);
                     consumed = true;
                 }
-                // Else, we already have enough; simply discard the extra input without error.
 
-                // In either case, clear the resource from the pipe and update its visual.
                 p.clearResource();
                 gc.updatePipeVisual(p);
             }
         }
         return consumed;
     }
-
 
     /*
      * Checks if sufficient inputs have been collected.
@@ -227,38 +335,6 @@ public final class ProcessorNode
             isProcessing = false;
             ticksRemaining = DEFAULT_VALUE;
         }
-    }
-
-    /*
-     * Attempts to output the processed resource to the first outgoing pipe.
-     *
-     * @param gc the GameController.
-     * @return true if the output succeeded; false otherwise.
-     */
-    private boolean tryOutputResource(final GameController gc)
-    {
-        if (processedResourceWaiting == null)
-        {
-            return false;
-        }
-
-        if (outgoingPipes.isEmpty())
-        {
-            processedResourceWaiting = null;
-            return true;
-        }
-
-        final Pipe p;
-        final boolean ok;
-
-        p = outgoingPipes.getFirst();
-        ok = p.trySetResource(processedResourceWaiting);
-
-        if (ok)
-        {
-            gc.updatePipeVisual(p);
-        }
-        return ok;
     }
 
     /*
@@ -541,79 +617,5 @@ public final class ProcessorNode
     protected Label createInfoLabelVisual()
     {
         return null;
-    }
-
-    /*
-     * Validates the processing delay value.
-     *
-     * @param delay the processing delay (in ticks)
-     * @param nodeId the identifier of the node (used for error messages)
-     * @throws IllegalArgumentException if delay is negative
-     */
-    private static void validateDelay(final int delay,
-                                      final String nodeId)
-    {
-        if (delay < DEFAULT_VALUE)
-        {
-            throw new IllegalArgumentException(
-                    "Processing delay must be non-negative for node " + nodeId
-            );
-        }
-    }
-
-    /*
-     * Validates the recipe map for required input resources.
-     *
-     * @param recipe the map of resources required by this processor
-     * @param nodeId the identifier of the node (used for error messages)
-     *
-     * @throws NullPointerException     if recipe is null
-     * @throws IllegalArgumentException if the recipe is empty or has invalid entries
-     */
-    private static void validateRecipe(final Map<ResourceType, Integer> recipe,
-                                       final String nodeId)
-    {
-
-        Objects.requireNonNull(recipe, "Recipe cannot be null for node " + nodeId);
-
-        if (recipe.isEmpty())
-        {
-            throw new IllegalArgumentException("Recipe is empty for node " + nodeId);
-        }
-
-        for (Map.Entry<ResourceType, Integer> entry : recipe.entrySet())
-        {
-            ResourceType resourceType = entry.getKey();
-            Integer      quantity     = entry.getValue();
-
-            if (resourceType == null)
-            {
-                throw new IllegalArgumentException(
-                        "Recipe contains a null ResourceType for node " + nodeId
-                );
-            }
-            if (quantity == null || quantity <= DEFAULT_VALUE)
-            {
-                throw new IllegalArgumentException(
-                        "Invalid quantity (" + quantity + ") for ResourceType " +
-                         resourceType + " in node " + nodeId
-                );
-            }
-        }
-    }
-
-    /*
-     * Validates the output resource type.
-     *
-     * @param output the ResourceType produced by this processor
-     * @param nodeId the identifier of the node (used for error messages)
-     *
-     * @throws NullPointerException if output is null
-     */
-    private static void validateOutput(final ResourceType output,
-                                       final String nodeId)
-    {
-        Objects.requireNonNull(output, "Output resource cannot be null for node " +
-                               nodeId);
     }
 }

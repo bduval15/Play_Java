@@ -37,7 +37,7 @@ public final class WordGame
     private static final int THIRD_QUESTION_TYPE        = 2;
 
     private static final String correctText             = "Correct!\n";
-    private static final String attemptTwoCorrectText   = "Correct on second attempt\n";
+    private static final String attemptTwoCorrectText   = "Correct on second attempt.\n";
 
     private final Scanner           scan;
     private final Random            rand;
@@ -107,8 +107,7 @@ public final class WordGame
             }
         }
     }
-
-
+    
     /**
      * The method that starts the game.
      * It initializes the game, loads country data, handles game rounds,
@@ -193,8 +192,9 @@ public final class WordGame
                         correctFirstAttempt++;
                         answerCorrect = true;
                     }
-                } else {
-
+                }
+                else
+                {
                     final String[] facts;
                     facts = country.getFacts();
 
@@ -236,7 +236,7 @@ public final class WordGame
 
                     }
                     else if
-                    (questionType == FIRST_QUESTION_TYPE &&
+                    (questionType == SECOND_QUESTION_TYPE &&
                                     userAnswer.equalsIgnoreCase(country.getCapitalCityName()))
                     {
                         System.out.println(attemptTwoCorrectText);
@@ -245,11 +245,19 @@ public final class WordGame
                     }
                     else
                     {
-                        System.out.printf("Incorrect again. The correct answer was '%s'.%n\n",
-                                (questionType == SECOND_QUESTION_TYPE
-                                        ? country.getCapitalCityName() : country.getCountryName()));
+                        if (questionType == SECOND_QUESTION_TYPE)
+                        {
+                            System.out.printf("Incorrect again. The correct answer was '%s'.%n\n",
+                                              country.getCapitalCityName());
+                        }
+                        else
+                        {
+                            System.out.printf("Incorrect again. The correct answer was '%s'.%n\n",
+                                              country.getCountryName());
+                        }
                         incorrect++;
                     }
+
                 }
             }
 

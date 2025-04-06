@@ -7,57 +7,77 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Factory class for creating {@link GameNode} objects from level definitions.
+ * A factory for creating GameNode instances from node configuration definitions.
+ *
  * <p>
- * The {@code NodeFactory} is responsible for instantiating concrete subclasses of
- * {@link GameNode} (namely, {@link SourceNode}, {@link ProcessorNode}, and {@link SinkNode})
- * based on the configuration details provided by a {@link LevelManager.NodeDefinition}.
- * This class encapsulates the parsing logic required to extract configuration parameters
- * from the node definition string and then uses these parameters to construct the appropriate node.
- * </p>
- * <p>
- * For a <strong>SourceNode</strong>, the factory expects the configuration string to contain
- * a token with the key {@value #CONFIG_KEY_PRODUCES} in the format:
- * <blockquote>
- *     PRODUCES=&lt;resource&gt;
- * </blockquote>
- * The resource value is used to determine the type of resource the node will produce,
- * and the node is created with a default production interval defined by
- * {@link SourceNode#DEFAULT_PRODUCTION_INTERVAL_SECONDS}.
- * </p>
- * <p>
- * For a <strong>ProcessorNode</strong>, the configuration string must include a token with the key
- * {@value #CONFIG_KEY_RECIPE} in the format:
- * <blockquote>
- *     RECIPE=&lt;inputList&gt;->&lt;output&gt;
- * </blockquote>
- * The input list consists of one or more comma-separated tokens in the format
- * {@code &lt;resource&gt;:&lt;quantity&gt;}, which are parsed into a recipe map.
- * Optionally, the configuration may contain a token with the key {@value #CONFIG_KEY_DELAY}
- * to specify the processing delay, with a minimum value enforced by {@link ProcessorNode#MIN_DELAY_TICKS}.
- * </p>
- * <p>
- * For a <strong>SinkNode</strong>, the configuration string must begin with the token
- * {@value #CONFIG_KEY_DEMAND} in the format:
- * <blockquote>
- *     DEMAND=&lt;resource&gt;:&lt;quantity&gt;,[&lt;resource&gt;:&lt;quantity&gt;,...]
- * </blockquote>
- * This token indicates the required resource demands that must be satisfied for the sink node.
- * The factory parses this token to construct a demand map, which is then used to instantiate a {@link SinkNode}.
- * </p>
- * <p>
- * All parsing of configuration strings is performed in a case-insensitive manner.
- * If any required configuration is missing or if the format does not conform to the expected pattern,
- * the factory will throw an {@code IllegalArgumentException} with a descriptive error message
- * indicating the nature of the configuration error for the respective node.
- * </p>
- * <p>
- * This factory abstracts the node creation process so that other parts of the system can
- * simply supply a level definition and obtain a fully configured {@code GameNode} instance,
- * ensuring consistency and reducing duplication of parsing logic throughout the codebase.
+ * This class processes configuration strings from LevelManager.NodeDefinition objects
+ * and creates the appropriate GameNode subclass (SourceNode, ProcessorNode, or SinkNode)
+ * based on the specified type.
  * </p>
  *
- * @author Braeden Duval
+ * <h2>Supported Configuration Formats</h2>
+ *
+ * <h3>SourceNode</h3>
+ * <p>
+ * The configuration for a SourceNode must include a token in the following format:
+ * <br>
+ * PRODUCES=resourceType
+ * <br>
+ * where <code>resourceType</code> is the name of the resource produced by the node.
+ * </p>
+ *
+ * <h3>ProcessorNode</h3>
+ * <p>
+ * The configuration for a ProcessorNode must include a token formatted as:
+ * <br>
+ * RECIPE=inputList->output
+ * <br>
+ * Here:
+ * <ul>
+ *   <li><code>inputList</code> is a comma-separated list of resource:quantity pairs (for example, <code>wood:3,stone:2</code>).</li>
+ *   <li><code>output</code> is the resource produced after processing.</li>
+ * </ul>
+ * Optionally, the configuration may include a token:
+ * <br>
+ * DELAY=value
+ * <br>
+ * which specifies the processing delay. A minimum delay is enforced.
+ * </p>
+ *
+ * <h3>SinkNode</h3>
+ * <p>
+ * The configuration for a SinkNode must start with a token in the following format:
+ * <br>
+ * DEMAND=resourceType:quantity[,resourceType:quantity,...]
+ * <br>
+ * In this format:
+ * <ul>
+ *   <li><code>resourceType</code> is the name of the required resource.</li>
+ *   <li><code>quantity</code> is a positive integer indicating how many units of the resource are needed.</li>
+ *   <li>Multiple resource demands can be specified by separating them with commas.</li>
+ * </ul>
+ * For example:
+ * <br>
+ * DEMAND=wood:10,stone:5
+ * </p>
+ *
+ * <h2>Error Handling</h2>
+ * <p>
+ * If the configuration string is missing required tokens or does not conform to the expected format,
+ * the factory throws an IllegalArgumentException with a clear error message.
+ * </p>
+ *
+ * <p>
+ * By centralizing node creation and configuration parsing, NodeFactory ensures consistency across
+ * the system and simplifies the instantiation of GameNode objects.
+ * </p>
+ *
+ * @see LevelManager.NodeDefinition
+ * @see SourceNode
+ * @see ProcessorNode
+ * @see SinkNode
+ *
+ * @author Braeden
  * @version 1.0
  */
 
@@ -110,9 +130,9 @@ public final class NodeFactory
         {
             node = switch (typeUpper)
             {
-                case NODE_TYPE_SOURCE -> parseSourceConfig(definition);
-                case NODE_TYPE_PROCESSOR -> parseProcessorConfig(definition);
-                case NODE_TYPE_SINK -> parseSinkConfig(definition);
+                case NODE_TYPE_SOURCE       -> parseSourceConfig(definition);
+                case NODE_TYPE_PROCESSOR    -> parseProcessorConfig(definition);
+                case NODE_TYPE_SINK         -> parseSinkConfig(definition);
                 default -> throw new IllegalArgumentException("Unknown type: " +
                                                               definition.getType());
             };

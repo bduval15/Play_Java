@@ -62,7 +62,8 @@ final class World
      * <p>Builds a map of country names mapped to {@code Country} objects by reading
      * country data from text files stored in the specified directory.
      * Each file contains country details, including the capital city
-     * and up to three facts.</p>
+     * and up to three facts. Regex ensures only .txt files with the format
+     * of singleChar.txt files are scanned.</p>
      *
      * @return An immutable map containing country names as keys
      * and {@code Country} objects as values.
@@ -114,10 +115,10 @@ final class World
                         continue;
                     }
 
-                    final String[] countryCapitalSplit;
-                    final String countryName;
-                    final String capital;
-                    final List<String> facts;
+                    final String[]      countryCapitalSplit;
+                    final String        countryName;
+                    final String        capital;
+                    final List<String>  facts;
 
                     countryCapitalSplit = countryCapitalLine.split(":", MAX_WORD_SPLIT);
                     countryName         = formatCountryName(countryCapitalSplit[TEXT_SPLIT_INDEX_START].trim());
@@ -128,6 +129,7 @@ final class World
                     {
                         final String factLine;
                         factLine = scan.nextLine().trim();
+
                         facts.add(factLine);
                     }
 

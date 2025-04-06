@@ -106,6 +106,50 @@ public abstract class GameNode
         this.y = y;
     }
 
+    /*
+     * Checks that id are not null or empty strings.
+     *
+     * @param id the unique identifier for each node
+     */
+    private static void validateId(final String id)
+    {
+        if(id == null || id.isEmpty())
+        {
+            throw new IllegalArgumentException("Node ID empty.");
+        }
+    }
+
+    /*
+     * Checks that x and y are not NaN and are non-negative (x >= 0, y >= 0).
+     *
+     * @param x the x-coordinate
+     * @param y the y-coordinate
+     * @throws IllegalArgumentException if x or y is NaN or negative
+     */
+    private static void validateCoordinates(final double x,
+                                            final double y)
+    {
+        if (Double.isNaN(x))
+        {
+            throw new IllegalArgumentException("x cannot be NaN");
+        }
+
+        if (Double.isNaN(y))
+        {
+            throw new IllegalArgumentException("y cannot be NaN");
+        }
+
+        if (x < 0)
+        {
+            throw new IllegalArgumentException("x cannot be negative: " + x);
+        }
+
+        if (y < 0)
+        {
+            throw new IllegalArgumentException("y cannot be negative: " + y);
+        }
+    }
+
     /**
      * Creates the visual representation of the node body.
      *
@@ -134,7 +178,6 @@ public abstract class GameNode
      */
     protected abstract Label createInfoLabelVisual();
 
-    // --- Public Methods ---
     /**
      * Returns the offset for the input connector.
      *
@@ -461,7 +504,10 @@ public abstract class GameNode
     @Override
     public String toString()
     {
-        return String.format("%s[%s]", getClass().getSimpleName(), id);
+        final String format;
+        format = String.format("%s[%s]", getClass().getSimpleName(), id);
+
+        return format;
     }
 
     /**
@@ -485,7 +531,10 @@ public abstract class GameNode
         final GameNode gameNode;
         gameNode = (GameNode) o;
 
-        return id.equals(gameNode.id);
+        final boolean isEqual;
+        isEqual = id.equals(gameNode.id);
+
+        return isEqual;
     }
 
     /**
@@ -496,49 +545,9 @@ public abstract class GameNode
     @Override
     public int hashCode()
     {
-        return Objects.hash(id);
-    }
+        final int hash;
+        hash = Objects.hash(id);
 
-    /*
-     * Checks that id are not null or empty strings.
-     *
-     * @param id the unique identifier for each node
-     */
-    private static void validateId(final String id)
-    {
-        if(id == null || id.isEmpty())
-        {
-            throw new IllegalArgumentException("Node ID empty.");
-        }
-    }
-
-    /*
-     * Checks that x and y are not NaN and are non-negative (x >= 0, y >= 0).
-     *
-     * @param x the x-coordinate
-     * @param y the y-coordinate
-     * @throws IllegalArgumentException if x or y is NaN or negative
-     */
-    private static void validateCoordinates(final double x, final double y)
-    {
-        if (Double.isNaN(x))
-        {
-            throw new IllegalArgumentException("x cannot be NaN");
-        }
-
-        if (Double.isNaN(y))
-        {
-            throw new IllegalArgumentException("y cannot be NaN");
-        }
-
-        if (x < 0)
-        {
-            throw new IllegalArgumentException("x cannot be negative: " + x);
-        }
-
-        if (y < 0)
-        {
-            throw new IllegalArgumentException("y cannot be negative: " + y);
-        }
+        return hash;
     }
 }

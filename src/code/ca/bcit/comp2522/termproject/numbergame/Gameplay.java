@@ -35,14 +35,14 @@ public interface Gameplay
      *
      * @param didWin {@code true} if the game was won, {@code false} otherwise.
      */
-    void updateScoreOnGameEnd(boolean didWin);
+    void updateScoreOnGameEnd(final boolean didWin);
 
     /**
      * Attempts to place the next number at the specified index on the game board.
      *
      * @param index the index where the number should be placed.
      */
-    void placeNumber(int index);
+    void placeNumber(final int index);
 
     /**
      * Generates and returns the next number to be placed on the board.

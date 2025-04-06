@@ -27,7 +27,7 @@ package ca.bcit.comp2522.termproject.resourcerouter.util;
  * @version 1.0
  */
 
-public class LevelLoadException extends Exception
+public final class LevelLoadException extends Exception
 {
 
   /**
@@ -35,7 +35,7 @@ public class LevelLoadException extends Exception
    *
    * @param message the detail message that explains the reason for the exception.
    */
-  public LevelLoadException(String message)
+  public LevelLoadException(final String message)
   {
     super(message);
   }
@@ -47,7 +47,8 @@ public class LevelLoadException extends Exception
    * @param cause the underlying cause of this exception,
    *              which can be retrieved later by the {@link #getCause()} method.
    */
-  public LevelLoadException(String message, Throwable cause)
+  public LevelLoadException(final String message,
+                            final Throwable cause)
   {
     super(message, cause);
   }

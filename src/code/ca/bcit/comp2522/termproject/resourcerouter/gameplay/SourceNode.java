@@ -70,8 +70,8 @@ public final class SourceNode extends GameNode
     private static final double MIN_PRODUCTION_INTERVAL             = 0.1;
     private static final int    DEFAULT_VALUE                       = 0;
 
-    public static final String STYLE_CLASS              = "source-node";
-    public static final String NODE_ACTIVE_STYLE_CLASS  = "node-active";
+    public static final String STYLE_CLASS                          = "source-node";
+    public static final String NODE_ACTIVE_STYLE_CLASS              = "node-active";
     public static final double DEFAULT_PRODUCTION_INTERVAL_SECONDS  = 1.0;
 
     private final ResourceType  resourceTypeToProduce;
@@ -123,6 +123,42 @@ public final class SourceNode extends GameNode
     }
 
     /*
+     * Checks that the ResourceType is non-null.
+     *
+     * @param resourceType the resource type to validate
+     * @param nodeId       the node identifier (for error messages)
+     *
+     * @throws NullPointerException if resourceType is null
+     */
+    private static void validateResourceType(final ResourceType resourceType,
+                                             final String nodeId)
+    {
+        Objects.requireNonNull(resourceType,
+                               "Source type missing for " +
+                               nodeId);
+    }
+
+    /*
+     * Validates the production interval.
+     * Adjust or throw exceptions as fits your design (e.g. must be >= 0.1).
+     *
+     * @param interval the desired production interval in seconds
+     * @param nodeId   the node identifier (for error messages)
+     *
+     * @throws IllegalArgumentException if interval is negative, or zero, etc.
+     */
+    private static void validateInterval(final double interval,
+                                         final String nodeId)
+    {
+        if (interval <= DEFAULT_VALUE)
+        {
+            throw new IllegalArgumentException(
+                    "Production interval must be positive for node " + nodeId
+            );
+        }
+    }
+
+    /*
      * Sets or removes the active visual style for the source node.
      *
      * @param active true to set the node as active; false otherwise.
@@ -150,7 +186,8 @@ public final class SourceNode extends GameNode
     public void update(final double deltaTime,
                        final GameController controller)
     {
-        if (!controller.isSimulationRunning() || !canProduce)
+        if (!controller.isSimulationRunning() ||
+            !canProduce)
         {
             setVisualActive(false);
             return;
@@ -208,12 +245,14 @@ public final class SourceNode extends GameNode
     protected Node createNodeBodyVisual()
     {
         final StackPane visualGroup;
+        final Circle bodyCircle;
+
         visualGroup = new StackPane();
         visualGroup.setLayoutX(x - BODY_RADIUS);
         visualGroup.setLayoutY(y - BODY_RADIUS);
-        visualGroup.setPrefSize(BODY_RADIUS * NODE_DIAMETER_MULTIPLIER, BODY_RADIUS * NODE_DIAMETER_MULTIPLIER);
+        visualGroup.setPrefSize(BODY_RADIUS * NODE_DIAMETER_MULTIPLIER,
+                                BODY_RADIUS * NODE_DIAMETER_MULTIPLIER);
 
-        final Circle bodyCircle;
         bodyCircle = new Circle(BODY_RADIUS);
         bodyCircle.setFill(resourceTypeToProduce.getDisplayColor());
         bodyCircle.getStyleClass().addAll(NODE_BODY_STYLE_CLASS, STYLE_CLASS);
@@ -242,9 +281,12 @@ public final class SourceNode extends GameNode
         cY = y + CONNECTOR_OFFSET_Y - HALF_CONNECTOR_SIZE;
 
         final Rectangle outputConnector;
-        outputConnector = new Rectangle(cX, cY, CONNECTOR_SIZE, CONNECTOR_SIZE);
-
         final Shape result;
+
+        outputConnector = new Rectangle(cX,
+                                        cY,
+                                        CONNECTOR_SIZE,
+                                        CONNECTOR_SIZE);
         result = outputConnector;
 
         return result;
@@ -298,39 +340,5 @@ public final class SourceNode extends GameNode
     protected Label createInfoLabelVisual()
     {
         return null;
-    }
-
-    /*
-     * Checks that the ResourceType is non-null.
-     *
-     * @param resourceType the resource type to validate
-     * @param nodeId       the node identifier (for error messages)
-     *
-     * @throws NullPointerException if resourceType is null
-     */
-    private static void validateResourceType(final ResourceType resourceType,
-                                             final String nodeId)
-    {
-        Objects.requireNonNull(resourceType, "Source type missing for " + nodeId);
-    }
-
-    /*
-     * Validates the production interval.
-     * Adjust or throw exceptions as fits your design (e.g. must be >= 0.1).
-     *
-     * @param interval the desired production interval in seconds
-     * @param nodeId   the node identifier (for error messages)
-     *
-     * @throws IllegalArgumentException if interval is negative, or zero, etc.
-     */
-    private static void validateInterval(final double interval,
-                                         final String nodeId)
-    {
-        if (interval <= DEFAULT_VALUE)
-        {
-            throw new IllegalArgumentException(
-                    "Production interval must be positive for node " + nodeId
-            );
-        }
     }
 }

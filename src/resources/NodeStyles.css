@@ -1,4 +1,4 @@
-/* === GLOBAL & LAYOUT === */
+/* Must be placed in the resources folder */
 .root
 {
     -fx-background-color: linear-gradient(to bottom, #1a1a2e, #16213e);

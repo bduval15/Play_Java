@@ -44,11 +44,14 @@ import java.util.Objects;
 public final class Pipe
 {
 
+    private static final String PIPE_GLOW_CSS       = "pipe-glow";
+    private static final String PIPE_RESOURCE_CSS   = "pipe-resource";
+
     public static final String BASE_STYLE_CLASS     = "pipe";
     public static final String PIPE_ID_PREFIX       = "pipe-";
     public static final double PARTICLE_RADIUS      = 6.0;
     public static final double PARTICLE_DURATION    = 1.0;
-    public static final int ONE_CYCLE               = 1;
+    public static final int    ONE_CYCLE            = 1;
 
     private final GameNode      startNode;
     private final GameNode      endNode;
@@ -87,6 +90,45 @@ public final class Pipe
     }
 
     /*
+     * Validates that neither the start node nor the end node is null.
+     *
+     * @param startNode the node from which the pipe originates
+     * @param endNode   the node where the pipe terminates
+     * @throws NullPointerException if startNode or endNode is null
+     */
+    private static void validateNodesNotNull(final GameNode startNode,
+                                             final GameNode endNode)
+    {
+        Objects.requireNonNull(startNode, "Start node cannot be null");
+        Objects.requireNonNull(endNode,   "End node cannot be null");
+    }
+
+    /*
+     * Validates that the given start node and end node form a logically correct connection.
+     *
+     * For example, you may require that the start node is a source or processor (out-capable),
+     * and the end node is a processor or sink (in-capable). If the nodes do not meet these criteria,
+     * this method throws an IllegalArgumentException.
+     *
+     *
+     * @param startNode the node from which the pipe originates
+     * @param endNode   the node where the pipe terminates
+     *
+     * @throws IllegalArgumentException if the connection is invalid according to the game logic
+     */
+    private static void validateConnection(final GameNode startNode,
+                                           final GameNode endNode)
+    {
+        if (!isValidConnection(startNode, endNode))
+        {
+            throw new IllegalArgumentException("Invalid pipe connection: " +
+                                               startNode.getClass().getSimpleName() +
+                                               " -> " +
+                                               endNode.getClass().getSimpleName());
+        }
+    }
+
+    /*
      * Checks whether the given start and end nodes form a valid connection.
      *
      * @param start the starting GameNode
@@ -94,7 +136,7 @@ public final class Pipe
      * @return true if the connection is valid; false otherwise
      */
     private static boolean isValidConnection(final GameNode start,
-                                      final GameNode end)
+                                             final GameNode end)
     {
         final boolean validStart;
         final boolean validEnd;
@@ -106,7 +148,6 @@ public final class Pipe
 
         return validConnection;
     }
-
 
     /*
      * Animates a particle along the pipe to represent resource flow.
@@ -128,7 +169,7 @@ public final class Pipe
         final PathTransition pathTransition;
         pathTransition = getPathTransition(particle);
 
-        Node parent;
+        final Node parent;
         parent = lineVisual.getParent();
 
         if (parent instanceof Pane)
@@ -151,6 +192,7 @@ public final class Pipe
 
         final PathTransition path;
         path = new PathTransition();
+
         path.setDuration(Duration.seconds(PARTICLE_DURATION));
         path.setPath(lineVisual);
         path.setNode(particle);
@@ -190,14 +232,14 @@ public final class Pipe
                 lineVisual.getStyleClass().add(BASE_STYLE_CLASS);
             }
 
-            lineVisual.getStyleClass().remove("pipe-glow");
-            lineVisual.getStyleClass().removeAll("pipe-resource");
+            lineVisual.getStyleClass().remove(PIPE_GLOW_CSS);
+            lineVisual.getStyleClass().removeAll(PIPE_RESOURCE_CSS);
 
             if (!isEmpty())
             {
-                lineVisual.getStyleClass().add("pipe-glow");
+                lineVisual.getStyleClass().add(PIPE_GLOW_CSS);
             }
-            lineVisual.getStyleClass().add("pipe-resource");
+            lineVisual.getStyleClass().add(PIPE_RESOURCE_CSS);
         }
     }
 
@@ -206,9 +248,9 @@ public final class Pipe
      */
     public void resetState()
     {
-        currentResource = null;
-        busyThisTick = false;
-        stateChangedThisTick = false;
+        currentResource         = null;
+        busyThisTick            = false;
+        stateChangedThisTick    = false;
     }
 
     /**
@@ -326,7 +368,7 @@ public final class Pipe
         final List<Circle> particlesCopy;
         particlesCopy = new ArrayList<>(activeParticles);
 
-        for (Circle particle : particlesCopy)
+        for (final Circle particle : particlesCopy)
         {
             final Node parent;
             parent = particle.getParent();
@@ -416,44 +458,5 @@ public final class Pipe
         result = Objects.hash(startNode.getId(), endNode.getId());
 
         return result;
-    }
-
-    /*
-     * Validates that neither the start node nor the end node is null.
-     *
-     * @param startNode the node from which the pipe originates
-     * @param endNode   the node where the pipe terminates
-     * @throws NullPointerException if startNode or endNode is null
-     */
-    private static void validateNodesNotNull(final GameNode startNode,
-                                             final GameNode endNode)
-    {
-        Objects.requireNonNull(startNode, "Start node cannot be null");
-        Objects.requireNonNull(endNode,   "End node cannot be null");
-    }
-
-    /*
-     * Validates that the given start node and end node form a logically correct connection.
-     *
-     * For example, you may require that the start node is a source or processor (out-capable),
-     * and the end node is a processor or sink (in-capable). If the nodes do not meet these criteria,
-     * this method throws an IllegalArgumentException.
-     *
-     *
-     * @param startNode the node from which the pipe originates
-     * @param endNode   the node where the pipe terminates
-     *
-     * @throws IllegalArgumentException if the connection is invalid according to the game logic
-     */
-    private static void validateConnection(final GameNode startNode,
-                                           final GameNode endNode)
-    {
-        if (!isValidConnection(startNode, endNode))
-        {
-            throw new IllegalArgumentException("Invalid pipe connection: " +
-                                               startNode.getClass().getSimpleName() +
-                                               " -> " +
-                                               endNode.getClass().getSimpleName());
-        }
     }
 }

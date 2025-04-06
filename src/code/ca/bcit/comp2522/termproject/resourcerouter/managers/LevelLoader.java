@@ -257,6 +257,7 @@ public final class LevelLoader
                 break;
 
             case NODE_DEFINITION_KEYWORD:
+
                 if (parts.length >= NODE_PARTS_MIN)
                 {
                     try
@@ -267,10 +268,10 @@ public final class LevelLoader
                         final double y;
                         final String config;
 
-                        type = parts[NODE_PART_INDEX_TYPE];
-                        id = parts[NODE_PART_INDEX_ID];
-                        x = Double.parseDouble(parts[NODE_PART_INDEX_X]);
-                        y = Double.parseDouble(parts[NODE_PART_INDEX_Y]);
+                        type    = parts[NODE_PART_INDEX_TYPE];
+                        id      = parts[NODE_PART_INDEX_ID];
+                        x       = Double.parseDouble(parts[NODE_PART_INDEX_X]);
+                        y       = Double.parseDouble(parts[NODE_PART_INDEX_Y]);
 
                         if (parts.length > NODE_PART_INDEX_CONFIG)
                         {

@@ -28,32 +28,78 @@ import javafx.util.Duration;
 import java.util.Objects;
 
 /**
- * The ResourceRouterMainMenu class serves as the primary user interface controller
- * and entry point for the Resource Router game application.
- * <p>
- * This class is responsible for initializing the main JavaFX stage and constructing
- * the overall user interface. It creates and manages various overlays such as the main menu,
- * game over, and the main gameplay view.
- * </p>
- * <p>
- * Key functionalities include:
+ * The ResourceRouterMainMenu class is the primary entry point and user interface controller
+ * for the Resource Router game application. As a JavaFX Application, it is responsible for
+ * initializing the primary stage, constructing the overall UI layout, and managing the various
+ * overlays and UI components that reflect the current game state.
+ *
+ * <p>This class provides the following key functionalities:</p>
  * <ul>
- *   <li>Initializing the stage with a grid background and setting up a layered UI using a StackPane.</li>
- *   <li>Constructing UI components for displaying game status (level, score, timer, and status messages)
- *       and for controlling game actions (starting/stopping the simulation, resetting pipes, navigating levels, etc.).</li>
- *   <li>Managing the navigation and transitions between different game states (MENU, PLAYING,
- *       GAME_OVER) by updating overlay visibility and UI components accordingly.</li>
- *   <li>Handling user input through mouse clicks and keyboard events to facilitate pipe construction,
- *       removal, and general game control.</li>
- *   <li>Interfacing with the GameController to coordinate game logic, including starting new game sessions,
- *       level transitions, score updates, and simulation control.</li>
- *   <li>Updating UI elements in a thread-safe manner via Platform.runLater, ensuring that label displays and overlays
- *       reflect the current game state accurately.</li>
+ *   <li>
+ *     <strong>UI Layout Construction:</strong>
+ *     <ul>
+ *       <li>Initializes a layered UI using a {@code StackPane} which contains the game view,
+ *           game over overlay, and main menu overlay.</li>
+ *       <li>Creates a game view comprising a top status bar, a central game pane (wrapped in a scroll pane)
+ *           with a grid background, and a bottom control area with game buttons and a prompt label.</li>
+ *       <li>Applies CSS styling from an external stylesheet to ensure consistent look and feel.</li>
+ *     </ul>
+ *   </li>
+ *   <li>
+ *     <strong>Overlay Management:</strong>
+ *     <ul>
+ *       <li>Constructs and styles the main menu overlay for starting and quitting the game.</li>
+ *       <li>Creates a game over overlay to display the final score and provide options to play again or
+ *           return to the main menu.</li>
+ *     </ul>
+ *   </li>
+ *   <li>
+ *     <strong>User Interaction and Input Handling:</strong>
+ *     <ul>
+ *       <li>Handles mouse click events in the game pane for building and removing pipes, including identifying
+ *           which visual node was clicked and mapping it to a logical game node.</li>
+ *       <li>Implements keyboard shortcuts (e.g., start/stop simulation, reset pipes, escape to main menu) via key handlers.</li>
+ *       <li>Uses JavaFX's {@code Platform.runLater} mechanism to update UI components (labels, overlays, button states)
+ *           in a thread-safe manner.</li>
+ *     </ul>
+ *   </li>
+ *   <li>
+ *     <strong>Game State Management and Transitions:</strong>
+ *     <ul>
+ *       <li>Maintains the current game state (such as MENU, PLAYING, GAME_OVER, etc.) and updates the UI
+ *           accordingly when state changes occur.</li>
+ *       <li>Coordinates with the {@link GameController} to
+ *           start new game sessions, transition between levels, and manage simulation control (start, stop, reset).</li>
+ *       <li>Uses smooth fade transitions when changing between game states to enhance the user experience.</li>
+ *     </ul>
+ *   </li>
  * </ul>
+ *
+ * <p>
+ * The class makes extensive use of private helper methods to modularize functionality, including:
+ * </p>
+ * <ul>
+ *   <li>{@code setupPromptLabel()} – Initializes the prompt label used to display instructions or status messages.</li>
+ *   <li>{@code setupGameView()} – Constructs the main game view layout with a grid background and control areas.</li>
+ *   <li>{@code createGameStatusInfoBar()} and {@code createBottomArea()} – Build the top information bar and bottom button area,
+ *       respectively.</li>
+ *   <li>{@code setupMenuOverlay()} and {@code setupGameOverOverlay()} – Create and style the main menu and game over overlays.</li>
+ *   <li>{@code setupClickConnectAndSceneHandlers(Scene)} and {@code setupSceneKeyHandler(Scene)} – Attach mouse and keyboard
+ *       event handlers to enable interactive gameplay.</li>
+ *   <li>Various update methods (e.g., {@code updatePrompt(String)}, {@code updateStatus(String)},
+ *       {@code updateTimer(double)}, {@code updateLevelDisplay(int)}, and {@code updateScoreDisplay(int)}) that
+ *       update UI elements in response to game events.</li>
+ * </ul>
+ *
+ * <p>
+ * The ResourceRouterMainMenu class serves as the bridge between the game logic (managed by the
+ * {@link GameController}) and the visual presentation,
+ * ensuring that the UI reflects the current game state at all times.
  * </p>
  *
  * @see GameController
- * @see GameState
+ * @see GameNode
+ *
  * @author Braeden Duval
  * @version 1.0
  */
@@ -63,6 +109,11 @@ public final class ResourceRouterMainMenu
 {
 
     private static final int    MAX_SOURCE_OUTPUTS              = 2;
+    private static final int    NODE_START_INDEX                = 10;
+    private static final int    CONNECTOR_IN_START_INDEX        = 13;
+    private static final int    CONNECTOR_OUT_START_INDEX       = 14;
+    private static final int    LABEL_START_INDEX               = 6;
+
     private static final double INITIAL_WINDOW_WIDTH            = 900.0;
     private static final double INITIAL_WINDOW_HEIGHT           = 750.0;
     private static final double GAME_PANE_MIN_HEIGHT            = 600.0;
@@ -85,6 +136,7 @@ public final class ResourceRouterMainMenu
     private static final double FADE_END_VALUE                  = 0.0;
     private static final double STARTING_CLAMP                  = 0.0;
     private static final double DEFAULT_VALUE                   = 0.0;
+
     private static final String STYLESHEET_PATH                 = "/nodeStyles.css";
     private static final String CONNECTOR_SELECTED_STYLE_CLASS  = "connector-selected";
     private static final String TIMER_LOW_CLASS                 = "timer-low";
@@ -120,7 +172,9 @@ public final class ResourceRouterMainMenu
     private static final String MANUAL_STOP_MESSAGE             = "Manual stop";
     private static final String RETURNED_TO_MENU_MESSAGE        = "Returned to menu";
     private static final String CSS_LOAD_FAIL_PREFIX            = "CSS Load Fail: ";
-
+    private static final String CONNECTOR_IN                    = "connector-in-";
+    private static final String CONNECTOR_OUT                   = "connector-out-";
+    
     private Stage               primaryStage;
     private BorderPane          gameViewPane;
     private Pane                gamePane;
@@ -315,11 +369,11 @@ public final class ResourceRouterMainMenu
         title = createTitleLabel(MENU_OVERLAY_TITLE);
 
         startBtn = createMenuButton(MENU_START_GAME_TEXT);
-        startBtn.setOnAction(e -> gameController.startGameSession());
+        startBtn.setOnAction(_ -> gameController.startGameSession());
 
 
         quitBtn = createMenuButton(MENU_QUIT_TEXT);
-        quitBtn.setOnAction(e -> {
+        quitBtn.setOnAction(_ -> {
             if (primaryStage != null) {
                 primaryStage.close();
             }
@@ -497,11 +551,12 @@ public final class ResourceRouterMainMenu
             {
                 return;
             }
+
             final Node clickedVisual;
             final boolean simRunning;
 
-            clickedVisual = event.getPickResult().getIntersectedNode();
-            simRunning = gameController.isSimulationRunning();
+            clickedVisual   = event.getPickResult().getIntersectedNode();
+            simRunning      = gameController.isSimulationRunning();
 
             if (!simRunning && clickedVisual instanceof Line lineClicked &&
                     lineClicked.getId() != null &&
@@ -649,19 +704,19 @@ public final class ResourceRouterMainMenu
 
         if (nodeId.startsWith("node-body-"))
         {
-            lId = nodeId.substring(10);
+            lId = nodeId.substring(NODE_START_INDEX);
         }
-        else if (nodeId.startsWith("connector-in-"))
+        else if (nodeId.startsWith(CONNECTOR_IN))
         {
-            lId = nodeId.substring(13);
+            lId = nodeId.substring(CONNECTOR_IN_START_INDEX);
         }
-        else if (nodeId.startsWith("connector-out-"))
+        else if (nodeId.startsWith(CONNECTOR_OUT))
         {
-            lId = nodeId.substring(14);
+            lId = nodeId.substring(CONNECTOR_OUT_START_INDEX);
         }
         else if (nodeId.startsWith("label-"))
         {
-            lId = nodeId.substring(6);
+            lId = nodeId.substring(LABEL_START_INDEX);
         }
         return lId;
     }
@@ -684,17 +739,18 @@ public final class ResourceRouterMainMenu
         final String prefix;
         if (out)
         {
-            prefix = "connector-out-";
+            prefix = CONNECTOR_OUT;
         }
         else
         {
-            prefix = "connector-in-";
+            prefix = CONNECTOR_IN;
         }
+
         final String connectorId;
         final Node connector;
 
-        connectorId= prefix + logicalNode.getId();
-        connector = gamePane.lookup("#" + connectorId);
+        connectorId = prefix + logicalNode.getId();
+        connector   = gamePane.lookup("#" + connectorId);
 
         return connector;
     }
@@ -725,12 +781,11 @@ public final class ResourceRouterMainMenu
     private void clearSelectionHighlight()
     {
         gamePane.getChildren().stream()
-                .filter(n -> n != null &&
-                        n.getStyleClass()
-                                .contains(CONNECTOR_SELECTED_STYLE_CLASS))
-
-                .forEach(n -> n.getStyleClass()
-                        .remove(CONNECTOR_SELECTED_STYLE_CLASS));
+                              .filter(n -> n != null &&
+                              n.getStyleClass()
+                              .contains(CONNECTOR_SELECTED_STYLE_CLASS))
+                              .forEach(n -> n.getStyleClass()
+                              .remove(CONNECTOR_SELECTED_STYLE_CLASS));
     }
 
     /*
@@ -863,10 +918,10 @@ public final class ResourceRouterMainMenu
     {
         Platform.runLater(() -> {
             try {
-                final Stage stage;
+                final Stage       stage;
                 final Application newGame;
 
-                stage = new Stage();
+                stage   = new Stage();
                 newGame = new ResourceRouterMainMenu();
                 newGame.start(stage);
                 stage.show();
@@ -895,17 +950,23 @@ public final class ResourceRouterMainMenu
         if (newState.equals(GameState.LEVEL_COMPLETE))
         {
             this.currentState = newState;
+
             clearSelectionHighlight();
             selectedSourceNode = null;
+
             updateUIForState(newState);
-            updateButtonStates(false, true);
+            updateButtonStates(false,
+                               true);
             return;
         }
 
         final FadeTransition fadeOut;
-        fadeOut = new FadeTransition(Duration.millis(FADE_OUT_DURATION_MS), rootStackPane);
+        fadeOut = new FadeTransition(Duration.millis(FADE_OUT_DURATION_MS),
+                                     rootStackPane);
+
         fadeOut.setFromValue(FADE_START_VALUE );
         fadeOut.setToValue(FADE_END_VALUE);
+
         fadeOut.setOnFinished(e -> {
             if (newState.equals(GameState.MENU) && gameController != null)
             {
@@ -914,10 +975,13 @@ public final class ResourceRouterMainMenu
                 gameController.clearLevelState();
                 gamePane.getChildren().clear();
             }
+
             this.currentState = newState;
             clearSelectionHighlight();
+
             selectedSourceNode = null;
             updateUIForState(newState);
+
             switch (newState)
             {
                 case MENU -> {
@@ -925,6 +989,7 @@ public final class ResourceRouterMainMenu
                 case GAME_OVER -> updateGameOverScore(gameController.getCurrentSessionScore());
                 default -> updateButtonStates(false, false);
             }
+
             final FadeTransition fadeIn;
             fadeIn = new FadeTransition(Duration.millis(FADE_IN_DURATION_MS), rootStackPane);
             fadeIn.setFromValue(FADE_END_VALUE);
@@ -1114,12 +1179,12 @@ public final class ResourceRouterMainMenu
         final GameController controller;
         final Scene scene;
 
-        stageRef = primary;
-        primaryStage = stageRef;
+        stageRef        = primary;
+        primaryStage    = stageRef;
         primaryStage.setTitle("Resource Router");
 
-        rootPane = new StackPane();
-        rootStackPane = rootPane;
+        rootPane        = new StackPane();
+        rootStackPane   = rootPane;
 
         setupPromptLabel();
         setupGameView();

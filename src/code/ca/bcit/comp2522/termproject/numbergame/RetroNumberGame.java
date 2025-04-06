@@ -1,14 +1,11 @@
 package ca.bcit.comp2522.termproject.numbergame;
 
+import javafx.application.Platform;
 import javafx.geometry.Pos;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
+import javafx.scene.control.*;
 import javafx.scene.control.Alert.AlertType;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Pane;
+import javafx.scene.layout.*;
+import javafx.stage.Stage;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -67,6 +64,9 @@ public final class RetroNumberGame
     private static final int GRID_ROWS          = 4;
     private static final int GRID_COLS          = 5;
     private static final int TOTAL_NUMBERS      = 20;
+    private static final int LOWER_BOUND_RAND   = 1;
+    private static final int UPPER_BOUND_RAND   = 1000;
+    private static final double DEFAULT_AVG     = 0.0;
 
     private static final int boardHGap          = 5;
     private static final int boardVGap          = 5;
@@ -74,7 +74,12 @@ public final class RetroNumberGame
     private static final int bracketBtnHeight   = 40;
     private static final int bottomBoxGap       = 20;
 
-    private static final String synthButtonCss = "synth-button";
+    private static final String synthButtonCss              = "synth-button";
+    private static final String NUM_PLACEHOLDER             = "[]";
+    private static final String FINAL_SCORE_TITLE           = "Final Score";
+    private static final String FINAL_SCORE_STATUS_HEADER   = "Final Score Status";
+    private static final String TRY_AGAIN_TEXT              = "Try Again";
+    private static final String QUIT_TEXT                   = "Quit";
 
     private static int currentIndex                 = 0;
     private static int successfulPlacementsThisGame = 0;
@@ -90,21 +95,21 @@ public final class RetroNumberGame
     private BorderPane root;
 
     /*
-     * Populates the {@code numbers} array with a set of unique random numbers.
+     * Populates the numbers array with a set of unique random numbers.
      *
      * <p>This method creates a list of numbers from 1 to 1000, shuffles the list to randomize the order,
-     * and then selects the first {@code TOTAL_NUMBERS} values from the shuffled list.
-     * This approach ensures that all the numbers in the {@code numbers} array are unique.
+     * and then selects the first TOTAL_NUMBERS values from the shuffled list.
+     * This approach ensures that all the numbers in the numbers array are unique.
      */
     private void generateAllNumbers()
     {
-        List<Integer> numberList;
-        final int startingNum;
-        final int endNum;
+        List<Integer>   numberList;
+        final int       startingNum;
+        final int       endNum;
 
-        numberList = new ArrayList<>();
-        startingNum = 1;
-        endNum = 1000;
+        numberList      = new ArrayList<>();
+        startingNum     = LOWER_BOUND_RAND;
+        endNum          = UPPER_BOUND_RAND;
 
         for (int i = startingNum; i <= endNum; i++)
         {
@@ -124,14 +129,14 @@ public final class RetroNumberGame
      * <p>
      * The number is considered legal if:
      * <ul>
-     *     <li>All numbers placed in positions prior to {@code index} are less than or equal to the number.</li>
-     *     <li>All numbers placed in positions after {@code index} are greater than or equal to the number.</li>
+     *     <li>All numbers placed in positions prior to index are less than or equal to the number.</li>
+     *     <li>All numbers placed in positions after index are greater than or equal to the number.</li>
      * </ul>
      * </p>
      *
      * @param index the board position to check.
      * @param num   the number that is intended to be placed.
-     * @return {@code true} if the number can be legally placed; {@code false} otherwise.
+     * @return true if the number can be legally placed; false otherwise.
      */
     private boolean canPlaceHere(final int index,
                                  final int num)
@@ -140,10 +145,12 @@ public final class RetroNumberGame
         {
             final String txt;
             txt = gridButtons[i].getText();
-            if (!txt.equals("[]"))
+
+            if (!txt.equals(NUM_PLACEHOLDER ))
             {
                 final int placedNum;
                 placedNum = Integer.parseInt(txt);
+
                 if (placedNum > num)
                 {
                     return false;
@@ -154,10 +161,12 @@ public final class RetroNumberGame
         {
             final String txt;
             txt = gridButtons[i].getText();
-            if (!txt.equals("[]"))
+
+            if (!txt.equals(NUM_PLACEHOLDER))
             {
                 final int placedNum;
                 placedNum = Integer.parseInt(txt);
+
                 if (placedNum < num)
                 {
                     return false;
@@ -167,14 +176,14 @@ public final class RetroNumberGame
         return true;
     }
 
-    /**
+    /*
      * Handles the end-of-game procedures.
      * <p>
      * This method disables further game interaction, updates the overall score, and displays a game-over
      * dialog informing the user whether they won or lost. The dialog message includes a summary of the score.
      * </p>
      *
-     * @param didIWin {@code true} if the game was won; {@code false} if lost.
+     * @param didIWin true if the game was won; false if lost.
      */
     private void gameOver(final boolean didIWin)
     {
@@ -190,15 +199,18 @@ public final class RetroNumberGame
         else
         {
             final int nextNumber;
+
             if (currentIndex < TOTAL_NUMBERS)
             {
                 nextNumber = numbers[currentIndex];
-            } else
+            }
+            else
             {
                 nextNumber = noNumPlacement;
             }
 
             final String detail;
+
             if (nextNumber == noNumPlacement)
             {
                 detail = "No more numbers left.";
@@ -227,10 +239,11 @@ public final class RetroNumberGame
     {
         final double avg;
         final double noGamesPlayed;
-        noGamesPlayed = 0;
+        noGamesPlayed = DEFAULT_AVG;
+
         if (totalGames == noGamesPlayed)
         {
-            avg = 0.0;
+            avg = DEFAULT_AVG;
         }
         else
         {
@@ -286,7 +299,7 @@ public final class RetroNumberGame
         for (int i = 0; i < gridButtons.length; i++)
         {
             final Button bracketBtn;
-            bracketBtn = new Button("[]");
+            bracketBtn = new Button(NUM_PLACEHOLDER);
             bracketBtn.setPrefSize(bracketBtnWidth, bracketBtnHeight);
             bracketBtn.getStyleClass().add(synthButtonCss);
 
@@ -298,17 +311,17 @@ public final class RetroNumberGame
         }
         root.setCenter(boardGrid);
 
-        tryAgainBtn = new Button("Try Again");
+        tryAgainBtn = new Button(TRY_AGAIN_TEXT);
         tryAgainBtn.getStyleClass().add(synthButtonCss);
         tryAgainBtn.setOnAction(e -> startNewGame());
 
-        quitBtn = new Button("Quit");
+        quitBtn = new Button(QUIT_TEXT);
         quitBtn.getStyleClass().add(synthButtonCss);
         quitBtn.setOnAction(e -> {
             final Alert alert;
             alert = new Alert(AlertType.INFORMATION);
-            alert.setTitle("Final Score");
-            alert.setHeaderText("Score Status");
+            alert.setTitle(FINAL_SCORE_TITLE );
+            alert.setHeaderText(FINAL_SCORE_STATUS_HEADER);
             alert.setContentText(getScoreMessage());
             alert.showAndWait();
             ((javafx.stage.Stage) quitBtn.getScene().getWindow()).close();
@@ -365,13 +378,15 @@ public final class RetroNumberGame
     {
         final String text;
         text = gridButtons[index].getText();
-        if (!text.equals("[]"))
+
+        if (!text.equals(NUM_PLACEHOLDER))
         {
             return;
         }
 
         final int numberToPlace;
         numberToPlace = generateNextNumber();
+
         if (numberToPlace == noNumPlacement)
         {
             return;
@@ -417,11 +432,13 @@ public final class RetroNumberGame
         {
             return false;
         }
+
         final int nextNumber;
         nextNumber = numbers[currentIndex];
+
         for (int i = 0; i < gridButtons.length; i++)
         {
-            if (gridButtons[i].getText().equals("[]"))
+            if (gridButtons[i].getText().equals(NUM_PLACEHOLDER))
             {
                 if (canPlaceHere(i, nextNumber))
                 {
@@ -443,6 +460,7 @@ public final class RetroNumberGame
     {
         final boolean win;
         win = currentIndex >= TOTAL_NUMBERS;
+
         return win;
     }
 
@@ -491,9 +509,9 @@ public final class RetroNumberGame
     @Override
     protected void resetGameBoard()
     {
-        for (Button btn : gridButtons)
+        for (final Button btn : gridButtons)
         {
-            btn.setText("[]");
+            btn.setText(NUM_PLACEHOLDER);
             btn.setDisable(false);
         }
     }
@@ -504,7 +522,7 @@ public final class RetroNumberGame
     @Override
     protected void disableGameControls()
     {
-        for (Button btn : gridButtons)
+        for (final Button btn : gridButtons)
         {
             btn.setDisable(true);
         }
@@ -516,7 +534,7 @@ public final class RetroNumberGame
     @Override
     protected void enableGameControls()
     {
-        for (Button btn : gridButtons)
+        for (final Button btn : gridButtons)
         {
             btn.setDisable(false);
         }
@@ -531,11 +549,39 @@ public final class RetroNumberGame
     protected void showGameOverDialog(final String message)
     {
         final Alert alert;
-        alert = new Alert(AlertType.INFORMATION);
+        alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Game Over");
-        alert.setHeaderText(null);
+        alert.setHeaderText("Score Status");
         alert.setContentText(message);
-        alert.showAndWait();
+
+        final ButtonType tryAgainBtn;
+        final ButtonType quitBtn;
+
+        tryAgainBtn = new ButtonType(TRY_AGAIN_TEXT);
+        quitBtn = new ButtonType(QUIT_TEXT);
+
+        alert.getButtonTypes().setAll(tryAgainBtn, quitBtn);
+
+        alert.showAndWait().ifPresent(response -> {
+            if (response == tryAgainBtn)
+            {
+                startNewGame();
+            }
+            else if (response == quitBtn)
+            {
+                final Alert finalScoreAlert;
+                finalScoreAlert = new Alert(Alert.AlertType.INFORMATION);
+                finalScoreAlert.setTitle(FINAL_SCORE_TITLE );
+                finalScoreAlert.setHeaderText(FINAL_SCORE_STATUS_HEADER);
+                finalScoreAlert.setContentText(getScoreMessage());
+                finalScoreAlert.showAndWait();
+
+                final Stage stage;
+                stage = (Stage) getRootPane().getScene().getWindow();
+
+                stage.close();
+            }
+        });
     }
 
     /**

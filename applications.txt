@@ -17,12 +17,13 @@ Interfaces in class GameLogic
 
 Lesson 5:
 Collections in classes GameController
-Generics in ResourceRouterMainMenu
 
 Lesson 6:
+Static Nested Class in LevelManager
+
+Lesson 7:
 Lambda Expressions in class LevelLoader, ResourceRouterMainMenu
 Method References in GameController
-Static Nested Class in LevelManager
 
 Lesson 8:
 File in class LevelLoader

@@ -59,6 +59,7 @@ public final class SinkNode extends GameNode
     private static final String NODE_WAITING_STYLE_CLASS   = "node-waiting";
     private static final String NODE_SATISFIED_STYLE_CLASS = "node-satisfied";
     private static final String SINK_ERROR_STATE_TEXT      = "sink-error-symbol";
+    private static final String EMPTY_STRING               = "";
 
     private static final double RADIUS                                  = 30.0;
     private static final double NODE_DIAMETER_MULTIPLIER                = 2.0;
@@ -97,13 +98,12 @@ public final class SinkNode extends GameNode
     private final Map<ResourceType, Integer> initialDemand;
     private final Map<ResourceType, Integer> currentDemand;
 
-    private int errorTickCounter = 0;
-    private Polygon bodyShape;
-    private RotateTransition rotateTransition;
-    private ScaleTransition pulseTransition;
-    private boolean isInErrorState = false;
-    private Label infoLabelVisual;
-
+    private int                 errorTickCounter;
+    private boolean             isInErrorState = false;
+    private Polygon             bodyShape;
+    private RotateTransition    rotateTransition;
+    private ScaleTransition     pulseTransition;
+    private Label               infoLabelVisual;
 
     /**
      * Constructs a new SinkNode with the specified id, position, and demand map.
@@ -116,9 +116,9 @@ public final class SinkNode extends GameNode
      * @throws IllegalArgumentException if the demandMap is empty or contains non-positive demand values
      */
     public SinkNode(final String id,
-            final double x,
-            final double y,
-            final Map<ResourceType, Integer> demandMap)
+                    final double x,
+                    final double y,
+                    final Map<ResourceType, Integer> demandMap)
     {
         super(id, x, y);
 
@@ -131,6 +131,48 @@ public final class SinkNode extends GameNode
     }
 
     /*
+     * Ensures the demand map is not null, not empty, and that all values are positive.
+     *
+     * @param demandMap the map of resource demands
+     * @param nodeId    the identifier of the node (for error messages)
+     *
+     * @throws NullPointerException     if demandMap is null
+     * @throws IllegalArgumentException if demandMap is empty or contains invalid demand quantities
+     */
+    private static void validateDemandMap(final Map<ResourceType, Integer> demandMap,
+                                          final String nodeId)
+    {
+        Objects.requireNonNull(demandMap, "Demand map cannot be null for node " + nodeId);
+
+        if (demandMap.isEmpty())
+        {
+            throw new IllegalArgumentException("Demand map is empty for node " + nodeId);
+        }
+
+        for (Map.Entry<ResourceType, Integer> entry : demandMap.entrySet())
+        {
+            if (entry.getKey() == null)
+            {
+                throw new IllegalArgumentException(
+                        "Demand map contains a null ResourceType for node " + nodeId
+                );
+            }
+
+            final Integer demandValue;
+            demandValue = entry.getValue();
+
+            if (demandValue == null ||
+                demandValue <= DEFAULT_VALUE)
+            {
+                throw new IllegalArgumentException(
+                        "Invalid demand quantity (" + demandValue + ") for resource " +
+                                entry.getKey() + " in node " + nodeId
+                );
+            }
+        }
+    }
+
+    /*
      * Creates an octagon (Polygon) centered in a square of size 2 * radius.
      *
      * @return the Polygon representing the octagon.
@@ -140,8 +182,8 @@ public final class SinkNode extends GameNode
         final Polygon   octagon;
         final double    center;
 
-        octagon = new Polygon();
-        center = RADIUS;
+        octagon     = new Polygon();
+        center      = RADIUS;
 
         for (int i = 0; i < OCTAGON_SIDES; i++)
         {
@@ -209,13 +251,13 @@ public final class SinkNode extends GameNode
      */
     private static LinearGradient getLinearGradient(final List<Color> colors)
     {
-        final Color leftColor;
-        final Color rightColor;
-        final Stop[] stops;
-        final LinearGradient gradient;
+        final Color             leftColor;
+        final Color             rightColor;
+        final Stop[]            stops;
+        final LinearGradient    gradient;
 
-        leftColor = colors.getFirst();
-        rightColor = colors.get(SECOND_COLOUR);
+        leftColor   = colors.getFirst();
+        rightColor  = colors.get(SECOND_COLOUR);
 
         stops = new Stop[]
                 {
@@ -261,7 +303,7 @@ public final class SinkNode extends GameNode
             bodyShape.setFill(Color.GOLD);
             rotateTransition.play();
             pulseTransition.play();
-            infoLabelVisual.setText("");
+            infoLabelVisual.setText(EMPTY_STRING );
             infoLabelVisual.setVisible(false);
         }
         else
@@ -269,7 +311,7 @@ public final class SinkNode extends GameNode
             updateFill();
             rotateTransition.stop();
             bodyShape.setRotate(RESET_ROTATION_ANGLE);
-            infoLabelVisual.setText("");
+            infoLabelVisual.setText(EMPTY_STRING );
             infoLabelVisual.setVisible(false);
         }
     }
@@ -282,7 +324,9 @@ public final class SinkNode extends GameNode
     public boolean isSatisfied()
     {
         final boolean satisfied;
-        satisfied = currentDemand.values().stream().allMatch(c -> c <= DEFAULT_VALUE);
+        satisfied = currentDemand.values()
+                                 .stream()
+                                 .allMatch(c -> c <= DEFAULT_VALUE);
 
         return satisfied;
     }
@@ -306,7 +350,8 @@ public final class SinkNode extends GameNode
     @Override
     public void resetState()
     {
-        if (currentDemand == null || initialDemand == null)
+        if (currentDemand == null ||
+            initialDemand == null)
         {
             return;
         }
@@ -314,7 +359,7 @@ public final class SinkNode extends GameNode
         currentDemand.clear();
         currentDemand.putAll(initialDemand);
         isInErrorState = false;
-        errorTickCounter = 0;
+        errorTickCounter = DEFAULT_VALUE;
 
         if (bodyShape != null)
         {
@@ -333,8 +378,8 @@ public final class SinkNode extends GameNode
     {
         if (isInErrorState)
         {
-            isInErrorState = false;
-            errorTickCounter = 0;
+            isInErrorState      = false;
+            errorTickCounter    = DEFAULT_VALUE;
 
             if (bodyShape != null)
             {
@@ -370,9 +415,9 @@ public final class SinkNode extends GameNode
         final double cY;
         final Rectangle rect;
 
-        cX = x + INPUT_CONNECTOR_OFFSET_X - HALF_CONNECTOR_SIZE;
-        cY = y + INPUT_CONNECTOR_OFFSET_Y - HALF_CONNECTOR_SIZE;
-        rect = new Rectangle(cX, cY, CONNECTOR_SIZE, CONNECTOR_SIZE);
+        cX      = x + INPUT_CONNECTOR_OFFSET_X - HALF_CONNECTOR_SIZE;
+        cY      = y + INPUT_CONNECTOR_OFFSET_Y - HALF_CONNECTOR_SIZE;
+        rect    = new Rectangle(cX, cY, CONNECTOR_SIZE, CONNECTOR_SIZE);
 
         return rect;
     }
@@ -388,7 +433,7 @@ public final class SinkNode extends GameNode
     {
         final Label infoLabel;
 
-        infoLabel = new Label("");
+        infoLabel = new Label(EMPTY_STRING);
         infoLabel.getStyleClass().add(SINK_ERROR_STATE_TEXT);
         infoLabel.setVisible(false);
 
@@ -428,7 +473,10 @@ public final class SinkNode extends GameNode
             infoLabelVisual = createInfoLabelVisual();
         }
 
-        vg.getChildren().addAll(bodyShape, demandIndicatorPane, infoLabelVisual);
+        vg.getChildren().addAll(bodyShape,
+                                demandIndicatorPane,
+                                infoLabelVisual);
+
         this.nodeBodyVisual = vg;
 
         rotateTransition = new RotateTransition(Duration.seconds(ROTATE_TRANSITION_DURATION_SECONDS), bodyShape);
@@ -506,7 +554,8 @@ public final class SinkNode extends GameNode
      * @param gc the {@link GameController} instance used for updating pipe visuals and managing the simulation.
      */
     @Override
-    public void update(final double dt, final GameController gc)
+    public void update(final double dt,
+                       final GameController gc)
     {
         if (!gc.isSimulationRunning())
         {
@@ -519,7 +568,7 @@ public final class SinkNode extends GameNode
             final List<Pipe> pipesToClear;
             pipesToClear = new ArrayList<>(incomingPipes);
 
-            for (Pipe p : pipesToClear)
+            for (final Pipe p : pipesToClear)
             {
                 if (p.getCurrentResource() != null)
                 {
@@ -534,7 +583,7 @@ public final class SinkNode extends GameNode
         final List<Pipe> pipesToProcess;
         pipesToProcess = new ArrayList<>(incomingPipes);
 
-        for (Pipe p : pipesToProcess)
+        for (final Pipe p : pipesToProcess)
         {
             final ResourceType resource;
             resource = p.getCurrentResource();
@@ -544,7 +593,7 @@ public final class SinkNode extends GameNode
                 if (currentDemand.containsKey(resource) &&
                     currentDemand.get(resource) > DEFAULT_VALUE)
                 {
-                    errorTickCounter = 0;
+                    errorTickCounter = DEFAULT_VALUE;
                     p.clearResource();
                     gc.updatePipeVisual(p);
 
@@ -574,46 +623,5 @@ public final class SinkNode extends GameNode
             }
         }
         updateVisualState();
-    }
-
-    /*
-     * Ensures the demand map is not null, not empty, and that all values are positive.
-     *
-     * @param demandMap the map of resource demands
-     * @param nodeId    the identifier of the node (for error messages)
-     *
-     * @throws NullPointerException     if demandMap is null
-     * @throws IllegalArgumentException if demandMap is empty or contains invalid demand quantities
-     */
-    private static void validateDemandMap(final Map<ResourceType, Integer> demandMap,
-                                          final String nodeId)
-    {
-        Objects.requireNonNull(demandMap, "Demand map cannot be null for node " + nodeId);
-
-        if (demandMap.isEmpty())
-        {
-            throw new IllegalArgumentException("Demand map is empty for node " + nodeId);
-        }
-
-        for (Map.Entry<ResourceType, Integer> entry : demandMap.entrySet())
-        {
-            if (entry.getKey() == null)
-            {
-                throw new IllegalArgumentException(
-                        "Demand map contains a null ResourceType for node " + nodeId
-                );
-            }
-
-            final Integer demandValue;
-            demandValue = entry.getValue();
-
-            if (demandValue == null || demandValue <= DEFAULT_VALUE)
-            {
-                throw new IllegalArgumentException(
-                        "Invalid demand quantity (" + demandValue + ") for resource " +
-                         entry.getKey() + " in node " + nodeId
-                );
-            }
-        }
     }
 }

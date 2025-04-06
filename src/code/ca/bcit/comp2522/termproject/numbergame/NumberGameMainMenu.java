@@ -52,33 +52,36 @@ public final class NumberGameMainMenu
     private static final int    sceneHeight         = 500;
     private static final int    sceneWidth          = 700;
 
-    /**
+    /*
      * Builds and returns the overlay pane containing the game title and control buttons.
      * <p>
      * The overlay pane is composed of:
      * <ul>
      *   <li>A title label displaying "Retro 20-Number Challenge".</li>
-     *   <li>A "Start Game" button that hides the overlay and initiates a new game by calling {@code game.startNewGame()}.</li>
+     *   <li>A "Start Game" button that hides the overlay and initiates a new game by calling game.startNewGame().</li>
      *   <li>An "Exit" button that closes the primary stage, effectively closing the current game window.</li>
      * </ul>
      * </p>
      *
-     * @param game         the {@link RetroNumberGame} instance controlling the game logic
+     * @param game         the RetroNumberGame instance controlling the game logic
      * @param primaryStage the stage to be closed when the exit button is pressed
-     * @return a {@link VBox} containing the overlay UI elements
+     * @return a VBox containing the overlay UI elements
      */
-    private VBox buildOverlayPane(final RetroNumberGame game, final Stage primaryStage)
+    private VBox buildOverlayPane(final RetroNumberGame game,
+                                  final Stage primaryStage)
     {
-        final VBox overlay;
+        final VBox      overlay;
+        final Label     titleLabel;
+        final Button    startButton;
+        final Button    exitButton;
+
         overlay = new VBox(vboxAxis);
         overlay.setAlignment(Pos.CENTER);
         overlay.getStyleClass().add("overlay");
 
-        final Label titleLabel;
         titleLabel = new Label(gameTitle);
         titleLabel.getStyleClass().add("overlay-title");
 
-        final Button startButton;
         startButton = new Button(startButtonText);
         startButton.getStyleClass().add(buttonOverlayCSS);
         startButton.setOnAction(e -> {
@@ -86,7 +89,6 @@ public final class NumberGameMainMenu
             game.startNewGame();
         });
 
-        final Button exitButton;
         exitButton = new Button(exitButtonText);
         exitButton.getStyleClass().add(buttonOverlayCSS);
         exitButton.setOnAction(e -> primaryStage.close());
@@ -103,7 +105,8 @@ public final class NumberGameMainMenu
      * and passes it to the {@link NumberGameMainMenu#start(Stage)} method to display the game window.
      * </p>
      * <p>
-     * Any exceptions encountered during the initialization of the game window are caught and printed to the standard error stream.
+     * Any exceptions encountered during the initialization of the game window
+     * are caught and printed to the standard error stream.
      * </p>
      */
     public static void launchGame()
