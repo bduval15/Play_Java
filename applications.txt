@@ -33,7 +33,7 @@ Lesson 9:
 GUI in classes GameController, ResourceRouterMainMenu
 
 Lesson 10:
-Unit Tests
+Unit Tests in GameNodeTest
 
 Lesson 11:
 Design Pattern in class NodeFactory
