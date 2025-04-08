@@ -243,9 +243,17 @@ final class Score
                                   final String fileName)
                                   throws IOException
     {
-        try (final FileWriter     fileWriter      = new FileWriter(fileName, true);
-             final BufferedWriter bufferedWriter  = new BufferedWriter(fileWriter);
-             final PrintWriter    printWriter     = new PrintWriter(bufferedWriter))
+            final FileWriter fileWriter;
+            final BufferedWriter bufferedWriter;
+            final PrintWriter printWriter;
+
+            fileWriter      = new FileWriter(fileName, true);
+            bufferedWriter  = new BufferedWriter(fileWriter);
+            printWriter     = new PrintWriter(bufferedWriter);
+
+        try (fileWriter;
+             bufferedWriter;
+             printWriter)
         {
             printWriter.println(score.toString());
             printWriter.println();
@@ -434,27 +442,28 @@ final class Score
     @Override
     public String toString()
     {
-        final StringBuilder sb;
-        sb = new StringBuilder();
+        final StringBuilder stringBuilder;
+        stringBuilder = new StringBuilder();
 
-        sb.append(dateTimeText).append(dateTimePlayed.format(formatter)).append("\n");
-        sb.append(gamesPlayedText).append(numGamesPlayed).append("\n");
-        sb.append(correctFirstAttemptText).append(numCorrectFirstAttempt).append("\n");
-        sb.append(correctSecondAttemptText).append(numCorrectSecondAttempt).append("\n");
-        sb.append(incorrectAttemptsText).append(numIncorrectTwoAttempts).append("\n");
+        stringBuilder.append(dateTimeText).append(dateTimePlayed.format(formatter)).append("\n");
+        stringBuilder.append(gamesPlayedText).append(numGamesPlayed).append("\n");
+        stringBuilder.append(correctFirstAttemptText).append(numCorrectFirstAttempt).append("\n");
+        stringBuilder.append(correctSecondAttemptText).append(numCorrectSecondAttempt).append("\n");
+        stringBuilder.append(incorrectAttemptsText).append(numIncorrectTwoAttempts).append("\n");
 
         if (numGamesPlayed == GAMES_LINE_INDEX)
         {
-            sb.append("Score: ").append(getScore()).append(" points\n");
+            stringBuilder.append("Score: ").append(getScore()).append(" points\n");
         }
         else
         {
-            sb.append("Total Score: ").append(getScore()).append("\n");
-            sb.append("Average Score Per Game: ").append(String.format("%.2f", getAverageScorePerGame()));
+            stringBuilder.append("Total Score: ").append(getScore()).append("\n");
+            stringBuilder.append("Average Score Per Game: ")
+                         .append(String.format("%.2f", getAverageScorePerGame()));
         }
 
         final String gameInfo;
-        gameInfo = sb.toString();
+        gameInfo = stringBuilder.toString();
 
         return gameInfo;
     }

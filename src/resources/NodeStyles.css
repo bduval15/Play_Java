@@ -6,14 +6,14 @@
     -fx-font-family: 'Consolas', 'Courier New', monospace;
 }
 
-.control-bar,
+.control-statusBar,
 .bottom-button-bar,
 .overlay
 {
     -fx-background-color: rgba(15, 15, 26, 0.75);
 }
 
-.control-bar
+.control-statusBar
 {
     -fx-padding: 8px 15px;
     -fx-alignment: center_left;
@@ -223,11 +223,11 @@
     -fx-border-color: #555;
 }
 
-.menu-button
+.menu-Button
 {
     -fx-pref-width: 200;
     -fx-pref-height: 40;
-    -fx-border-color: #0ff;
+    -fx-border-color: #ff00ff;
 }
 
 #game-start-stop-button

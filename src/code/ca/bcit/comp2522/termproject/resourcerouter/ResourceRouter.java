@@ -170,7 +170,6 @@ public final class ResourceRouter
     private static final String NEXT_LEVEL_TEXT                 = "Next Level ->";
     private static final String MANUAL_STOP_MESSAGE             = "Manual stop";
     private static final String RETURNED_TO_MENU_MESSAGE        = "Returned to menu";
-    private static final String CSS_LOAD_FAIL_PREFIX            = "CSS Load Fail: ";
     private static final String CONNECTOR_IN                    = "connector-in-";
     private static final String CONNECTOR_OUT                   = "connector-out-";
     private static final String TITLE_FONT_FAMILY;
@@ -188,7 +187,7 @@ public final class ResourceRouter
     private GameController      gameController;
     private GameNode            selectedSourceNode;
     private StackPane           rootStackPane;
-    private GameState           currentState = GameState.MENU;
+    private GameState           currentState;
 
     private Button gameStartStopButton;
     private Button gameResetButton;
@@ -198,6 +197,10 @@ public final class ResourceRouter
     static
     {
         TITLE_FONT_FAMILY = null;
+    }
+
+    {
+        currentState = GameState.MENU;
     }
 
     /*
@@ -276,7 +279,7 @@ public final class ResourceRouter
      */
     private HBox createGameStatusInfoBar()
     {
-        final HBox statusBar;
+        final HBox  statusBar;
         final Label levelLabel;
         final Label scoreLabel;
         final Label timeLabel;

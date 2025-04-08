@@ -11,7 +11,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * The {@code RetroNumberGame} class implements a retro-styled number placement game.
+ * The {@code NumberGame} class implements a retro-styled number placement game.
  * <p>
  * This class extends {@code AbstractSynthwaveUI} to inherit common UI styling and behavior and
  * implements the {@code GameLogic} interface to provide the core game functionality. The game
@@ -94,7 +94,7 @@ final class NumberGame
     private BorderPane root;
 
     {
-        numbers = new int[TOTAL_NUMBERS];
+        numbers     = new int[TOTAL_NUMBERS];
         gridButtons = new Button[GRID_ROWS * GRID_COLS];
     }
 
@@ -467,7 +467,7 @@ final class NumberGame
         final ButtonType quitBtn;
 
         tryAgainBtn = new ButtonType(TRY_AGAIN_TEXT);
-        quitBtn = new ButtonType(QUIT_TEXT);
+        quitBtn     = new ButtonType(QUIT_TEXT);
 
         alert.getButtonTypes().setAll(tryAgainBtn, quitBtn);
 

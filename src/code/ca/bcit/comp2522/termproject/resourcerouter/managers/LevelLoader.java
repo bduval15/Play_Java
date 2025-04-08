@@ -370,9 +370,16 @@ public final class LevelLoader
         {
             return null;
         }
-        try (final InputStreamReader inputStreamReader = new InputStreamReader(inputStream,
-                                                                               StandardCharsets.UTF_8);
-             final BufferedReader reader               = new BufferedReader(inputStreamReader))
+
+        final InputStreamReader inputStreamReader;
+        final BufferedReader reader;
+
+        inputStreamReader = new InputStreamReader(inputStream,
+                                                  StandardCharsets.UTF_8);
+        reader            = new BufferedReader(inputStreamReader);
+
+        try (inputStreamReader;
+             reader)
         {
             final LevelManager levelManager;
             levelManager = parseLevelData(levelNumber,

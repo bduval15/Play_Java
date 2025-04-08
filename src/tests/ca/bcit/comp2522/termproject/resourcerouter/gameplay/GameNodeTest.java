@@ -15,7 +15,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
 
 // DummyGameNode is a minimal concrete subclass of GameNode for testing
-class DummyGameNode extends GameNode {
+final class DummyGameNode extends GameNode {
 
     DummyGameNode(String id, double x, double y) {
         super(id, x, y);
@@ -64,7 +64,7 @@ class DummyGameNode extends GameNode {
     }
 }
 
-public class GameNodeTest {
+public final class GameNodeTest {
 
     // ============================== Positive Tests ==============================
 

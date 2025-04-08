@@ -30,8 +30,10 @@ import javafx.scene.paint.Color;
  *
  * @author Braeden Duval
  * @version 1.0
+ *
  * @see javafx.scene.paint.Color
  * @see javafx.scene.text.Text
+ * 
  */
 
 public enum ResourceType

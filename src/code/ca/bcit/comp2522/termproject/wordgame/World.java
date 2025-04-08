@@ -109,7 +109,7 @@ final class World
         final Map<String, Country>  countryMap;
 
         folder      = new File(World.filepath);
-        files       = folder.listFiles((dir, name) -> name.matches("^[a-zA-Z]\\.txt$"));
+        files       = folder.listFiles((_, name) -> name.matches("^[a-zA-Z]\\.txt$"));
         countryMap  = new HashMap<>();
 
         if (files == null || files.length == TEXT_SPLIT_INDEX_START)

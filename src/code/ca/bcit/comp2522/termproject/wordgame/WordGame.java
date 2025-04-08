@@ -116,7 +116,8 @@ public final class WordGame
             final String input;
             input = scan.nextLine().trim();
 
-            if (input.equalsIgnoreCase("Yes")) {
+            if (input.equalsIgnoreCase("Yes"))
+            {
                 return true;
             }
             else if (input.equalsIgnoreCase("No"))
@@ -179,7 +180,8 @@ public final class WordGame
 
         try
         {
-            File file = new File(scoreFile);
+            final File file;
+            file = new File(scoreFile);
 
             if (!file.exists() &&
                 !file.createNewFile())
