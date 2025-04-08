@@ -66,15 +66,23 @@ public final class LevelManager
     private final double                timeLimitSeconds;
     private final String                prompt;
 
+
     /**
      * Constructs a LevelManager with the specified level number, node definitions,
-     * time limit in seconds, and prompt.
+     * time limit, and prompt.
+     * <p>
+     * The constructor validates that the level number is greater than zero and that the
+     * time limit is positive; if not, an IllegalArgumentException is thrown. The list of
+     * node definitions is copied into a new ArrayList and then wrapped in an unmodifiable
+     * list to prevent external modification.
+     * </p>
      *
-     * @param levelNumber      the level number; must be positive.
-     * @param nodeDefinitions  the list of node definitions.
-     * @param timeLimitSeconds the time limit in seconds; must be positive.
-     * @param prompt           the prompt for the level.
-     * @throws IllegalArgumentException if the level number or time limit is not positive.
+     * @param levelNumber      the level number (must be positive)
+     * @param nodeDefinitions  a list of node definitions that describe the game nodes
+     * @param timeLimitSeconds the level’s time limit in seconds (must be positive)
+     * @param prompt           a prompt string for the level (can be empty)
+     *
+     * @throws IllegalArgumentException if the level number or time limit is not positive
      */
     public LevelManager(final int levelNumber,
                         final List<NodeDefinition> nodeDefinitions,
@@ -85,7 +93,7 @@ public final class LevelManager
         validateLevelNumber(levelNumber);
         validateTimeLimitSeconds(timeLimitSeconds);
 
-        final ArrayList<NodeDefinition> tempList;
+        final List<NodeDefinition> tempList;
         tempList = new ArrayList<>(nodeDefinitions);
 
         this.nodeDefinitions    = Collections.unmodifiableList(tempList);
@@ -93,10 +101,15 @@ public final class LevelManager
         this.prompt             = prompt;
     }
 
-    /**
-     * Validates the level numbers.
+    /*
+     * Validates that the provided level number is positive.
+     * <p>
+     * Throws an IllegalArgumentException if the level number is zero or negative.
+     * </p>
      *
-     * @param levelNumber the level number the user is on
+     * @param levelNumber the level number to validate
+     * @throws IllegalArgumentException if levelNumber is not positive
+     *
      */
     private void validateLevelNumber(final int levelNumber)
     {
@@ -106,10 +119,15 @@ public final class LevelManager
         }
     }
 
-    /**
-     * Validation method for Time Limit Seconds.
+    /*
+     * Validates that the time limit is positive.
+     * <p>
+     * Throws an IllegalArgumentException if the provided time limit is zero or negative.
+     * </p>
      *
-     * @param timeLimitSeconds time limit per level
+     * @param timeLimitSeconds the time limit in seconds to validate
+     * @throws IllegalArgumentException if timeLimitSeconds is not positive
+     *
      */
     private void validateTimeLimitSeconds(final double timeLimitSeconds)
     {
@@ -120,9 +138,13 @@ public final class LevelManager
     }
 
     /**
-     * Returns the unmodifiable list of node definitions.
+     * Returns an unmodifiable list of the node definitions for this level.
+     * <p>
+     * The returned list contains NodeDefinition objects that describe the nodes
+     * (their type, ID, position, and configuration) used in the level.
+     * </p>
      *
-     * @return the list of NodeDefinition objects.
+     * @return an unmodifiable List of NodeDefinition objects
      */
     public List<NodeDefinition> getNodeDefinitions()
     {
@@ -134,8 +156,11 @@ public final class LevelManager
 
     /**
      * Returns the time limit for the level in seconds.
+     * <p>
+     * This time limit governs the maximum playable duration for the level.
+     * </p>
      *
-     * @return the time limit in seconds.
+     * @return a double representing the level's time limit in seconds
      */
     public double getTimeLimitSeconds()
     {
@@ -146,9 +171,12 @@ public final class LevelManager
     }
 
     /**
-     * Returns the prompt for the level.
+     * Returns the prompt string for the level.
+     * <p>
+     * The prompt can provide instructions or narrative details to the player.
+     * </p>
      *
-     * @return the prompt as a String.
+     * @return a String containing the level prompt (or an empty string if not set)
      */
     public String getPrompt()
     {
@@ -159,87 +187,123 @@ public final class LevelManager
     }
 
     /**
-     * A static nested final class that represents a definition of a node in the level,
-     * including its type, unique ID,
-     * (x, y) coordinates, and an optional configuration string.
+     * Returns the default time limit value for levels.
+     * <p>
+     * This value is used as a fallback if a level does not specify a time limit.
+     * </p>
+     *
+     * @return the default time limit in seconds
+     */
+    public static double getDefaultTime()
+    {
+        return DEFAULT_TIME_LIMIT_SECONDS;
+    }
+
+    /**
+     * NodeDefinition is a static nested class that encapsulates the definition of a single game node.
+     * <p>
+     * A NodeDefinition includes:
+     * <ul>
+     *   <li>The node type (for example, "SOURCE", "PROCESSOR", or "SINK").</li>
+     *   <li>A unique identifier for the node.</li>
+     *   <li>The x and y coordinates specifying the node's position on the game board.</li>
+     *   <li>An optional configuration string that may contain additional parameters or settings.</li>
+     * </ul>
+     * <p>
+     * NodeDefinition objects are immutable; once created, their fields cannot be changed.
+     * The constructor validates that the type and ID are non-null and not blank, and that the
+     * coordinates are within acceptable limits. If validation fails, an IllegalArgumentException
+     * is thrown.
+     * </p>
      */
     public static final class NodeDefinition
     {
-        private final String type;
-        private final String id;
-        private final double x;
-        private final double y;
-        private final String config;
+        private final String nodeType;
+        private final String nodeId;
+        private final double xCoordinate;
+        private final double yCoordinate;
+        private final String configuration;
 
         /**
-         * Constructs a NodeDefinition with the specified attributes, validating
-         * that the type and ID are not null or empty, and that x and y are finite.
+         * Constructs a NodeDefinition with the specified node attributes.
+         * <p>
+         * The constructor validates that the node nodeType and ID are not null or blank, and that
+         * the x and y coordinates are finite and within predefined bounds. If any validation fails,
+         * an IllegalArgumentException is thrown.
+         * </p>
          *
-         * @param type   the type of the node (e.g., "SOURCE", "PROCESSOR", "SINK")
-         * @param id     the unique identifier of the node
-         * @param x      the x-coordinate of the node's center
-         * @param y      the y-coordinate of the node's center
-         * @param config an optional configuration string for the node (can be null or empty)
+         * @param nodeType      the node nodeType (e.g., "SOURCE", "PROCESSOR", "SINK"); must not be null or blank
+         * @param nodeId     the unique identifier for the node; must not be null or blank
+         * @param xCoordinate      the x-coordinate of the node's center
+         * @param yCoordinate      the y-coordinate of the node's center
+         * @param configuration an optional configuration string; may be null or empty
+         * @throws IllegalArgumentException if nodeType or id is null/blank, or if x or y is invalid
          *
-         * @throws IllegalArgumentException if {@code type} or {@code id} is null/empty,
-         *                                  or if x or y is not finite
          */
-        public NodeDefinition(final String type,
-                              final String id,
-                              final double x,
-                              final double y,
-                              final String config)
+        public NodeDefinition(final String nodeType,
+                              final String nodeId,
+                              final double xCoordinate,
+                              final double yCoordinate,
+                              final String configuration)
         {
-            validateType(type);
-            validateId(id);
-            validateCoordinates(x, y);
+            validateType(nodeType);
+            validateId(nodeId);
+            validateCoordinates(xCoordinate, yCoordinate);
 
-            this.type = type;
-            this.id   = id;
-            this.x    = x;
-            this.y    = y;
-            this.config = config;
+            this.nodeType       = nodeType;
+            this.nodeId         = nodeId;
+            this.xCoordinate    = xCoordinate;
+            this.yCoordinate    = yCoordinate;
+            this.configuration  = configuration;
         }
 
         /*
-         * Validates that 'type' is neither null nor empty.
+         * Validates that 'nodeType' is neither null nor empty.
          */
-        private static void validateType(final String type)
+        private static void validateType(final String nodeType)
         {
-            if (type == null || type.isBlank())
+            if (nodeType == null ||
+                nodeType.isBlank())
             {
-                throw new IllegalArgumentException("NodeDefinition 'type' cannot be null/blank.");
+                throw new IllegalArgumentException(
+                        "NodeDefinition 'nodeType' cannot be null/blank.");
             }
         }
 
         /*
-         * Validates that 'id' is neither null nor empty.
+         * Validates that 'nodeId' is neither null nor empty.
          */
-        private static void validateId(final String id)
+        private static void validateId(final String nodeId)
         {
-            if (id == null || id.isBlank())
+            if (nodeId == null ||
+                nodeId.isBlank())
             {
-                throw new IllegalArgumentException("NodeDefinition 'id' cannot be null/blank.");
+                throw new IllegalArgumentException(
+                        "NodeDefinition 'nodeId' cannot be null/blank.");
             }
         }
 
         /*
-         * Validates that x and y are numbers.
+         * Validates that the coordinates are within acceptable bounds.
+         * Checks that xCoordinate is finite and greater than the LOWER_BOUND, and does not exceed MAX_X_VALUE.
+         * Similarly, for yCoordinate with MAX_Y_VALUE.
          */
-        private static void validateCoordinates(final double x,
-                                                final double y)
+        private static void validateCoordinates(final double xCoordinate,
+                                                final double yCoordinate)
         {
-            if (Double.isNaN(x)     ||
-                x <= LOWER_BOUND_LIMIT ||
-                x > MAX_X_VALUE)
+            if (Double.isNaN(xCoordinate)        ||
+                xCoordinate <= LOWER_BOUND_LIMIT ||
+                xCoordinate > MAX_X_VALUE)
             {
-                throw new IllegalArgumentException("NodeDefinition 'x' is invalid.");
+                throw new IllegalArgumentException(
+                        "NodeDefinition 'xCoordinate' is invalid.");
             }
-            if (Double.isNaN(y)     ||
-                y <= LOWER_BOUND_LIMIT ||
-                y > MAX_Y_VALUE)
+            if (Double.isNaN(yCoordinate)        ||
+                yCoordinate <= LOWER_BOUND_LIMIT ||
+                yCoordinate > MAX_Y_VALUE)
             {
-                throw new IllegalArgumentException("NodeDefinition 'y' is invalid.");
+                throw new IllegalArgumentException(
+                        "NodeDefinition 'yCoordinate' is invalid.");
             }
         }
 
@@ -248,9 +312,9 @@ public final class LevelManager
          *
          * @return the node type (e.g., "SOURCE", "PROCESSOR", "SINK")
          */
-        public String getType()
+        public String getNodeType()
         {
-            return type;
+            return nodeType;
         }
 
         /**
@@ -258,9 +322,9 @@ public final class LevelManager
          *
          * @return the node ID
          */
-        public String getId()
+        public String getNodeId()
         {
-            return id;
+            return nodeId;
         }
 
         /**
@@ -268,9 +332,9 @@ public final class LevelManager
          *
          * @return the x-coordinate
          */
-        public double getX()
+        public double getXCoordinate()
         {
-            return x;
+            return xCoordinate;
         }
 
         /**
@@ -278,9 +342,9 @@ public final class LevelManager
          *
          * @return the y-coordinate
          */
-        public double getY()
+        public double getYCoordinate()
         {
-            return y;
+            return yCoordinate;
         }
 
         /**
@@ -288,9 +352,9 @@ public final class LevelManager
          *
          * @return the config string (can be null or empty)
          */
-        public String getConfig()
+        public String getConfiguration()
         {
-            return config;
+            return configuration;
         }
     }
 }

@@ -104,7 +104,7 @@ import java.util.Objects;
  * @version 1.0
  */
 
-public final class ResourceRouterMainMenu
+public final class ResourceRouter
              extends Application
 {
 
@@ -141,7 +141,6 @@ public final class ResourceRouterMainMenu
     private static final String CONNECTOR_SELECTED_STYLE_CLASS  = "connector-selected";
     private static final String TIMER_LOW_CLASS                 = "timer-low";
     private static final String TIMER_CRITICAL_CLASS            = "timer-critical";
-    private static final String TITLE_FONT_FAMILY               = null;
     private static final String DEFAULT_PROMPT_LABEL_TEXT       = "Default Prompt Label";
     private static final String CANCELLED_MESSAGE               = "Cancelled.";
     private static final String CONNECTOR_FIND_ERROR            = "Connector Find Error!";
@@ -174,6 +173,7 @@ public final class ResourceRouterMainMenu
     private static final String CSS_LOAD_FAIL_PREFIX            = "CSS Load Fail: ";
     private static final String CONNECTOR_IN                    = "connector-in-";
     private static final String CONNECTOR_OUT                   = "connector-out-";
+    private static final String TITLE_FONT_FAMILY;
     
     private Stage               primaryStage;
     private BorderPane          gameViewPane;
@@ -195,158 +195,187 @@ public final class ResourceRouterMainMenu
     private Button gameQuitButton;
     private Button nextLevelButton;
 
-    /*
-     * Sets up the prompt label at the top of the UI.
-     */
-    private void setupPromptLabel()
+    static
     {
-        final Label label;
-        label = new Label(DEFAULT_PROMPT_LABEL_TEXT);
-        label.getStyleClass().add("prompt-label");
-        label.setAlignment(Pos.CENTER);
-        label.setPrefWidth(INITIAL_WINDOW_WIDTH);
-
-        promptLabel = label;
+        TITLE_FONT_FAMILY = null;
     }
 
     /*
-     * Sets up the main game view, including the top bar, center pane, and bottom area.
+     * Initializes the prompt label used for displaying status or instructional text.
+     *
+     * A Label is created, styled with the "prompt-label" CSS class, centered,
+     * and given a fixed width equivalent to the initial window width.
+     * This label's text is initialized with the default prompt text.
+     *
+     */
+    private void setupPromptLabel()
+    {
+        final Label promptLabel;
+        promptLabel = new Label(DEFAULT_PROMPT_LABEL_TEXT);
+        promptLabel.getStyleClass().add("prompt-promptLabel");
+        promptLabel.setAlignment(Pos.CENTER);
+        promptLabel.setPrefWidth(INITIAL_WINDOW_WIDTH);
+
+        this.promptLabel = promptLabel;
+    }
+
+    /*
+     * Sets up the main game view by constructing the overall layout.
+     *
+     * This method builds a BorderPane consisting of:
+     *
+     * A top bar (returned by createGameStatusInfoBar()) displaying level, score, timer, and status.
+     * A central scrollable pane that contains the main game pane (a Pane with minimum height)
+     * A bottom area (returned by createBottomArea()) with the prompt label and control buttons.
+     *
+     * The game view is initially hidden and not managed (for layout purposes) until the game is ready.
+     *
      */
     private void setupGameView()
     {
-        final BorderPane pane;
+        final BorderPane gamePane;
         final HBox topBar;
         final Pane centerPane;
         final ScrollPane scrollPane;
         final VBox bottomArea;
 
-        pane = new BorderPane();
-        pane.setVisible(false);
-        pane.setManaged(false);
+        gamePane = new BorderPane();
+        gamePane.setVisible(false);
+        gamePane.setManaged(false);
 
         topBar = createGameStatusInfoBar();
-        pane.setTop(topBar);
+        gamePane.setTop(topBar);
 
         centerPane = new Pane();
         centerPane.setMinHeight(GAME_PANE_MIN_HEIGHT);
-        centerPane.getStyleClass().add("game-pane");
-        gamePane = centerPane;
+        centerPane.getStyleClass().add("game-gamePane");
+        this.gamePane = centerPane;
 
         scrollPane = new ScrollPane(centerPane);
         scrollPane.setFitToWidth(true);
         scrollPane.setFitToHeight(true);
-        scrollPane.getStyleClass().add("game-scroll-pane");
-        pane.setCenter(scrollPane);
+        scrollPane.getStyleClass().add("game-scroll-gamePane");
+        gamePane.setCenter(scrollPane);
 
         bottomArea = createBottomArea();
-        pane.setBottom(bottomArea);
+        gamePane.setBottom(bottomArea);
         BorderPane.setAlignment(bottomArea, Pos.CENTER);
 
-        gameViewPane = pane;
+        gameViewPane = gamePane;
     }
 
     /*
-     * Creates the HBox that displays level, score, timer, and status information.
+     * Creates the status bar at the top of the game view.
      *
-     * @return an HBox containing the game status info.
+     * This method constructs an HBox containing labels for the current level, score,
+     * timer, and overall status. The labels are styled via CSS classes and arranged
+     * with spacing and padding.
+     *
+     *
+     * @return an HBox containing the game status information.
      */
     private HBox createGameStatusInfoBar()
     {
-        final HBox bar;
-        final Label lvlLabel;
-        final Label scrLabel;
-        final Label tLabel;
+        final HBox statusBar;
+        final Label levelLabel;
+        final Label scoreLabel;
+        final Label timeLabel;
         final Label statLabel;
 
-        bar = new HBox(TOP_BAR_SPACING);
-        bar.setPadding(new Insets(TOP_BAR_PADDING));
-        bar.getStyleClass().add("control-bar");
-        bar.setAlignment(Pos.CENTER_LEFT);
+        statusBar = new HBox(TOP_BAR_SPACING);
+        statusBar.setPadding(new Insets(TOP_BAR_PADDING));
+        statusBar.getStyleClass().add("control-statusBar");
+        statusBar.setAlignment(Pos.CENTER_LEFT);
 
-        lvlLabel = createInfoLabel(LEVEL_LABEL_PREFIX + "-/-");
-        levelLabel = lvlLabel;
+        levelLabel = createInfoLabel(LEVEL_LABEL_PREFIX + "-/-");
+        this.levelLabel = levelLabel;
 
-        scrLabel = createInfoLabel(SCORE_LABEL_PREFIX +
-                                             DEFAULT_SCORE_TXT);
-        scoreLabel = scrLabel;
+        scoreLabel = createInfoLabel(SCORE_LABEL_PREFIX +
+                                     DEFAULT_SCORE_TXT);
+        this.scoreLabel = scoreLabel;
 
-        tLabel = createInfoLabel(String.format(TIME_LABEL_FORMAT,
-                                               DEFAULT_VALUE));
-        tLabel.setId(TIMER_LABEL_ID);
-        timerLabel = tLabel;
+        timeLabel = createInfoLabel(String.format(TIME_LABEL_FORMAT,
+                                                  DEFAULT_VALUE));
+        timeLabel.setId(TIMER_LABEL_ID);
+        timerLabel = timeLabel;
 
         statLabel = createInfoLabel("Status:");
         statLabel.setPrefWidth(STATUS_LABEL_WIDTH);
         statLabel.setWrapText(true);
         statusLabel = statLabel;
 
-        bar.getChildren().addAll(lvlLabel,
-                                 scrLabel,
-                                 tLabel,
-                                 statLabel);
-        return bar;
+        statusBar.getChildren().addAll(levelLabel,
+                                       scoreLabel,
+                                       timeLabel,
+                                       statLabel);
+        return statusBar;
     }
 
     /*
-     * Creates the bottom area containing the prompt label and game control buttons.
+     * Builds the bottom area of the game view containing the prompt label and control buttons.
      *
-     * @return a VBox that holds the prompt label and the button row.
+     * This method creates a VBox that first contains a prompt label (for instructions or status)
+     * and then a row of buttons for starting/stopping the simulation, resetting pipes, quitting, and
+     * progressing to the next level.
+     *
+     *
+     * @return a VBox representing the bottom control area.
      */
     private VBox createBottomArea()
     {
-        final VBox bottomArea;
-        final Label pLabel;
-        final HBox buttonRow;
-        final Button startStopBtn;
-        final Button resetBtn;
-        final Button quitBtn;
-        final Button nextBtn;
+        final VBox      bottomArea;
+        final Label     promptLabel;
+        final HBox      buttonRow;
+        final Button    startStopButton;
+        final Button    resetButton;
+        final Button    quitButton;
+        final Button    nextLevelButton;
 
         bottomArea = new VBox(BOTTOM_AREA_SPACING);
         bottomArea.setAlignment(Pos.CENTER);
         bottomArea.setPadding(new Insets(BOTTOM_BUTTON_AREA_PADDING_VAL));
         bottomArea.getStyleClass().add("bottom-button-bar");
 
-        pLabel = new Label(DEFAULT_PROMPT_LABEL_TEXT);
-        pLabel.getStyleClass().add("prompt-label");
-        pLabel.setWrapText(true);
-        promptLabel = pLabel;
+        promptLabel = new Label(DEFAULT_PROMPT_LABEL_TEXT);
+        promptLabel.getStyleClass().add("prompt-label");
+        promptLabel.setWrapText(true);
+        this.promptLabel = promptLabel;
 
         buttonRow = new HBox(GAME_BUTTON_SPACING_VAL);
         buttonRow.setAlignment(Pos.CENTER);
 
-        startStopBtn = createMenuButton(START_SIM_TEXT);
-        startStopBtn.setId("game-start-stop-button");
-        startStopBtn.setOnAction(e -> handleStartStopClick());
-        gameStartStopButton = startStopBtn;
+        startStopButton = createMenuButton(START_SIM_TEXT);
+        startStopButton.setId("game-start-stop-button");
+        startStopButton.setOnAction(e -> handleStartStopClick());
+        gameStartStopButton = startStopButton;
 
 
-        resetBtn = createMenuButton(RESET_PIPES_BUTTON_TEXT);
-        resetBtn.setId("game-reset-button");
-        resetBtn.setOnAction(e -> {
-            if (!gameController.isSimulationRunning())
+        resetButton = createMenuButton(RESET_PIPES_BUTTON_TEXT);
+        resetButton.setId("game-reset-button");
+        resetButton.setOnAction(e -> {
+            if (!gameController.isSimulationActive())
             {
                 gameController.resetFailedAttemptPipes();
             }
         });
-        gameResetButton = resetBtn;
+        gameResetButton = resetButton;
 
-        quitBtn = createMenuButton(QUIT_TO_MENU_TEXT);
-        quitBtn.setId("game-quit-button");
-        quitBtn.setOnAction(event -> changeGameState(GameState.MENU));
-        gameQuitButton = quitBtn;
+        quitButton = createMenuButton(QUIT_TO_MENU_TEXT);
+        quitButton.setId("game-quit-button");
+        quitButton.setOnAction(event -> changeGameState(GameState.MENU));
+        gameQuitButton = quitButton;
 
-        nextBtn = createMenuButton(NEXT_LEVEL_TEXT);
-        nextBtn.setId("next-level-button");
-        nextBtn.setOnAction(e -> gameController.loadNextLevel());
-        nextLevelButton = nextBtn;
+        nextLevelButton = createMenuButton(NEXT_LEVEL_TEXT);
+        nextLevelButton.setId("next-level-button");
+        nextLevelButton.setOnAction(e -> gameController.loadNextLevel());
+        this.nextLevelButton = nextLevelButton;
 
-        buttonRow.getChildren().addAll(startStopBtn,
-                                       resetBtn,
-                                       quitBtn,
-                                       nextBtn);
+        buttonRow.getChildren().addAll(startStopButton,
+                                       resetButton,
+                                       quitButton,
+                                       nextLevelButton);
 
-        bottomArea.getChildren().addAll(pLabel,
+        bottomArea.getChildren().addAll(promptLabel,
                                         buttonRow);
 
         updateButtonStates(false, false);
@@ -354,80 +383,94 @@ public final class ResourceRouterMainMenu
     }
 
     /*
-     * Sets up the main menu overlay (start, quit).
+     * Constructs and configures the main menu overlay.
+     *
+     * The overlay is a VBox that displays the game title and two buttons:
+     * one to start the game and one to quit.
+     *
+     * The overlay is styled and initially hidden.
+     *
      */
     private void setupMenuOverlay()
     {
-        final VBox overlay;
-        final Label title;
-        final Button startBtn;
-        final Button quitBtn;
+        final VBox      overlay;
+        final Label     gameTitle;
+        final Button    startButton;
+        final Button    quitButton;
 
         overlay = new VBox(OVERLAY_SPACING_VAL);
         styleOverlay(overlay);
 
-        title = createTitleLabel(MENU_OVERLAY_TITLE);
+        gameTitle = createTitleLabel(MENU_OVERLAY_TITLE);
 
-        startBtn = createMenuButton(MENU_START_GAME_TEXT);
-        startBtn.setOnAction(_ -> gameController.startGameSession());
+        startButton = createMenuButton(MENU_START_GAME_TEXT);
+        startButton.setOnAction(_ -> gameController.startGameSession());
 
 
-        quitBtn = createMenuButton(MENU_QUIT_TEXT);
-        quitBtn.setOnAction(_ -> {
+        quitButton = createMenuButton(MENU_QUIT_TEXT);
+        quitButton.setOnAction(_ -> {
             if (primaryStage != null) {
                 primaryStage.close();
             }
         });
 
-        overlay.getChildren().addAll(title,
-                                     startBtn,
-                                     quitBtn);
+        overlay.getChildren().addAll(gameTitle,
+                                     startButton,
+                                     quitButton);
 
         menuOverlay = overlay;
     }
 
     /*
-     * Sets up the game over overlay with final score and navigation buttons.
+     * Constructs and configures the game over overlay.
+     *
+     * This overlay displays the "Game Over" title, the final score, and provides buttons to play again
+     * or return to the main menu.
+     *
      */
     private void setupGameOverOverlay()
     {
-        final VBox overlay;
-        final Label title;
-        final Label scoreLbl;
-        final Button playAgainBtn;
-        final Button mainMenuBtn;
+        final VBox      overlay;
+        final Label     gameOverTitle;
+        final Label     scoreLabel;
+        final Button    playAgainButton;
+        final Button    mainMenuButton;
 
         overlay = new VBox(OVERLAY_SPACING_VAL);
         styleOverlay(overlay);
 
-        title = createTitleLabel(GAME_OVER_TITLE);
+        gameOverTitle = createTitleLabel(GAME_OVER_TITLE);
 
-        scoreLbl = createInfoLabel(FINAL_SCORE_PREFIX +
-                                             DEFAULT_SCORE_TXT);
-        scoreLbl.setId(FINAL_SCORE_LABEL_ID);
-        scoreLbl.setFont(Font.font(TITLE_FONT_FAMILY,
-                                   FontWeight.BOLD,
-                                   SCORE_FONT_SIZE));
+        scoreLabel = createInfoLabel(FINAL_SCORE_PREFIX +
+                                               DEFAULT_SCORE_TXT);
+        scoreLabel.setId(FINAL_SCORE_LABEL_ID);
+        scoreLabel.setFont(Font.font(TITLE_FONT_FAMILY,
+                           FontWeight.BOLD,
+                           SCORE_FONT_SIZE));
 
-        playAgainBtn = createMenuButton(GAME_OVER_PLAY_AGAIN);
-        playAgainBtn.setOnAction(e -> {
+        playAgainButton = createMenuButton(GAME_OVER_PLAY_AGAIN);
+        playAgainButton.setOnAction(e -> {
             gameController.resetGameState();
             gameController.startGameSession();
         });
 
-        mainMenuBtn = createMenuButton(GAME_OVER_MAIN_MENU);
-        mainMenuBtn.setOnAction(e -> changeGameState(GameState.MENU));
+        mainMenuButton = createMenuButton(GAME_OVER_MAIN_MENU);
+        mainMenuButton.setOnAction(e -> changeGameState(GameState.MENU));
 
-        overlay.getChildren().addAll(title,
-                                     scoreLbl,
-                                     playAgainBtn,
-                                     mainMenuBtn);
+        overlay.getChildren().addAll(gameOverTitle,
+                                     scoreLabel,
+                                     playAgainButton,
+                                     mainMenuButton);
 
         gameOverOverlay = overlay;
     }
 
     /*
-     * Applies styling to a VBox overlay, setting alignment, padding, and initial visibility.
+     * Applies standardized styling to an overlay container.
+     *
+     * This helper method sets alignment, padding, and a default style class ("overlay") on the provided VBox.
+     * It also sets the overlay to be initially invisible and unmanaged.
+     *
      *
      * @param overlay the VBox to style.
      */
@@ -441,9 +484,14 @@ public final class ResourceRouterMainMenu
     }
 
     /*
-     * Sets up the grid background on a parent pane, drawing horizontal and vertical lines.
+     * Sets up the grid background on the root pane.
      *
-     * @param parent the pane on which the grid is drawn.
+     * This method creates a Pane with horizontal and vertical grid lines spaced by GRID_INCREMENT,
+     * which is then added as the first child of the root pane. The grid is mouse-transparent to
+     * not interfere with gameplay.
+     *
+     *
+     * @param parent the parent pane on which to add the grid.
      */
     private void setupGridBackground(final Pane parent)
     {
@@ -454,25 +502,25 @@ public final class ResourceRouterMainMenu
                              INITIAL_WINDOW_HEIGHT);
         gridPane.setMouseTransparent(true);
 
-        for (double x = 0.0; x < INITIAL_WINDOW_WIDTH; x += GRID_INCREMENT)
+        for (double xAxis = 0.0; xAxis < INITIAL_WINDOW_WIDTH; xAxis += GRID_INCREMENT)
         {
             final Line line;
-            line = new Line(x,
+            line = new Line(xAxis,
                             DEFAULT_VALUE,
-                            x,
+                            xAxis,
                             INITIAL_WINDOW_HEIGHT);
 
             line.getStyleClass().add("grid-line");
             gridPane.getChildren().add(line);
         }
 
-        for (double y = 0.0; y < INITIAL_WINDOW_HEIGHT; y += GRID_INCREMENT)
+        for (double yAxis = 0.0; yAxis < INITIAL_WINDOW_HEIGHT; yAxis += GRID_INCREMENT)
         {
             final Line line;
             line = new Line(DEFAULT_VALUE,
-                            y,
+                            yAxis,
                             INITIAL_WINDOW_WIDTH,
-                            y);
+                            yAxis);
 
             line.getStyleClass().add("grid-line");
             gridPane.getChildren().add(line);
@@ -482,58 +530,75 @@ public final class ResourceRouterMainMenu
     }
 
     /*
-     * Creates a title label for overlays.
+     * Creates a title label used in overlays.
      *
-     * @param text the label text.
+     * The label is configured with the specified text, styled with bold text of size TITLE_FONT_SIZE,
+     * and assigned the CSS class "overlay-title".
+     *
+     * @param titleLabelText the text to display in the title.
      * @return a configured Label for overlay titles.
      */
-    private Label createTitleLabel(final String text)
+    private Label createTitleLabel(final String titleLabelText)
     {
-        final Label label;
-        label = new Label(text);
-        label.setFont(Font.font(TITLE_FONT_FAMILY,
+        final Label overlayLabel;
+        overlayLabel = new Label(titleLabelText);
+        overlayLabel.setFont(Font.font(TITLE_FONT_FAMILY,
                                 FontWeight.BOLD,
                                 TITLE_FONT_SIZE));
-        label.getStyleClass().add("overlay-title");
+        overlayLabel.getStyleClass().add("overlay-title");
 
-        return label;
+        return overlayLabel;
     }
 
     /*
-     * Creates a generic menu button with the specified text.
+     * Creates a menu button with the provided text.
      *
-     * @param text the button text.
-     * @return a configured Button for menus.
+     * The button is configured with a fixed width defined by MENU_BUTTON_WIDTH_VAL,
+     * and assigned the "menu-button" CSS style class.
+     *
+     *
+     * @param buttonText the text to appear on the button.
+     * @return a new Button instance for menus.
      */
-    private Button createMenuButton(final String text)
+    private Button createMenuButton(final String buttonText)
     {
-        final Button button;
-        button = new Button(text);
-        button.setPrefWidth(MENU_BUTTON_WIDTH_VAL);
-        button.getStyleClass().add("menu-button");
+        final Button menuButton;
+        menuButton = new Button(buttonText);
+        menuButton.setPrefWidth(MENU_BUTTON_WIDTH_VAL);
+        menuButton.getStyleClass().add("menu-Button");
 
-        return button;
+        return menuButton;
     }
 
     /*
-     * Creates an informational label with a given initial text.
+     * Creates an informational label with the specified initial text.
      *
-     * @param initialText the initial text for the label.
-     * @return a configured Label for info display.
+     * The label is assigned the "info-label" CSS class.
+     *
+     *
+     * @param initialText the text to initialize the label with.
+     * @return a new Label configured for informational display.
      */
     private Label createInfoLabel(final String initialText)
     {
-        final Label label;
-        label = new Label(initialText);
-        label.getStyleClass().add("info-label");
+        final Label informationLabel;
+        informationLabel = new Label(initialText);
+        informationLabel.getStyleClass().add("info-label");
 
-        return label;
+        return informationLabel;
     }
 
     /*
-     * Sets up mouse-click handling for building/removing pipes and scene key handling.
+     * Sets up mouse click and keyboard handlers for the Scene.
      *
-     * @param scene the Scene to set up handlers on.
+     * This method attaches event handlers to the Scene for handling:
+     *
+     *   Mouse clicks in the gamePane to build or remove pipes by
+     *       mapping visual elements to logical game nodes.
+     *   Keyboard shortcuts via setOnKeyPressed to control simulation actions,
+     *       such as starting/stopping simulation, resetting pipes, or returning to the main menu.
+     *
+     * @param scene the Scene to attach handlers to.
      */
     private void setupClickConnectAndSceneHandlers(final Scene scene)
     {
@@ -542,7 +607,21 @@ public final class ResourceRouterMainMenu
     }
 
     /*
-     * Handles mouse clicks in the gamePane for pipe building and removal.
+     * Attaches a mouse click handler to the gamePane for building and removing pipes.
+     *
+     * This handler processes clicks as follows:
+     *
+     * If the simulation is not running and a pipe (Line) is clicked, removes that pipe.
+     *
+     * If the simulation is running, updates the status message to indicate that pipe building
+     * cannot occur.
+     *
+     * If a game node is clicked that is not a connector, it marks the node as selected
+     * (if it is output-capable) or clears the selection if it’s clicked again.
+     *
+     * If a valid target node (input-capable) is clicked while a source node is selected,
+     * attempts to create a new pipe between them.
+     *
      */
     private void setupClickToConnectHandler()
     {
@@ -556,11 +635,11 @@ public final class ResourceRouterMainMenu
             final boolean simRunning;
 
             clickedVisual   = event.getPickResult().getIntersectedNode();
-            simRunning      = gameController.isSimulationRunning();
+            simRunning      = gameController.isSimulationActive();
 
             if (!simRunning && clickedVisual instanceof Line lineClicked &&
-                    lineClicked.getId() != null &&
-                    lineClicked.getId().startsWith(Pipe.PIPE_ID_PREFIX))
+                lineClicked.getId() != null &&
+                lineClicked.getId().startsWith(Pipe.getPipeIdPrefix()))
             {
                 gameController.removePipeByVisual(lineClicked);
                 clearSelectionHighlight();
@@ -604,7 +683,7 @@ public final class ResourceRouterMainMenu
                     }
                     else
                     {
-                        updateStatus(clickedLogicalNode.getId() + OUTPUT_BUSY_SUFFIX);
+                        updateStatus(clickedLogicalNode.getNodeId() + OUTPUT_BUSY_SUFFIX);
                     }
                 }
                 else
@@ -649,10 +728,15 @@ public final class ResourceRouterMainMenu
     }
 
     /*
-     * Locates the logical GameNode that corresponds to a given visual Node.
+     * Traverses up the visual hierarchy starting from the given Node to locate
+     * the associated logical GameNode.
      *
-     * @param visual the visual Node clicked.
-     * @return the corresponding GameNode, or null if not found.
+     * The method inspects each parent Node’s ID and extracts a logical node identifier (lId)
+     * using the known prefixes. It uses the GameController to map that lId to the logical GameNode.
+     *
+     *
+     * @param visual the visual Node that was clicked.
+     * @return the corresponding logical GameNode, or null if no match is found.
      */
     private GameNode findLogicalNodeViaVisual(final Node visual)
     {
@@ -666,13 +750,13 @@ public final class ResourceRouterMainMenu
 
             if (nodeId != null)
             {
-                final String lId;
-                lId = getLId(nodeId);
+                final String logicalIdentifier;
+                logicalIdentifier = getLogicalIdentifier(nodeId);
 
-                if (lId != null && !lId.isEmpty())
+                if (logicalIdentifier != null && !logicalIdentifier.isEmpty())
                 {
                     final GameNode result;
-                    result = gameController.getLogicalNodeById(lId);
+                    result = gameController.getLogicalNodeById(logicalIdentifier);
 
                     if (result != null)
                     {
@@ -697,39 +781,43 @@ public final class ResourceRouterMainMenu
      * @param nodeId the node ID from which to extract the logical identifier.
      * @return the extracted logical ID if a recognized prefix is present; otherwise, null.
      */
-    private static String getLId(final String nodeId)
+    private static String getLogicalIdentifier(final String nodeId)
     {
-        String lId;
-        lId = null;
+        String logicalIdentifier;
+        logicalIdentifier = null;
 
         if (nodeId.startsWith("node-body-"))
         {
-            lId = nodeId.substring(NODE_START_INDEX);
+            logicalIdentifier = nodeId.substring(NODE_START_INDEX);
         }
         else if (nodeId.startsWith(CONNECTOR_IN))
         {
-            lId = nodeId.substring(CONNECTOR_IN_START_INDEX);
+            logicalIdentifier = nodeId.substring(CONNECTOR_IN_START_INDEX);
         }
         else if (nodeId.startsWith(CONNECTOR_OUT))
         {
-            lId = nodeId.substring(CONNECTOR_OUT_START_INDEX);
+            logicalIdentifier = nodeId.substring(CONNECTOR_OUT_START_INDEX);
         }
         else if (nodeId.startsWith("label-"))
         {
-            lId = nodeId.substring(LABEL_START_INDEX);
+            logicalIdentifier = nodeId.substring(LABEL_START_INDEX);
         }
-        return lId;
+        return logicalIdentifier;
     }
 
     /*
-     * Finds the visual connector node for the specified logical GameNode.
+     * Locates and returns the visual connector Node for the given logical GameNode.
      *
-     * @param logicalNode the logical node.
-     * @param out         true for output connector, false for input connector.
-     * @return the visual Node of the connector, or null if not found.
+     * If outputConnector is true, the method looks up the output connector; if false, it looks
+     * for the input connector. The lookup is performed by constructing the expected connector ID
+     * and searching the gamePane.
+     *
+     * @param logicalNode the logical GameNode.
+     * @param outputConnector         true to look up the output connector; false for input connector.
+     * @return the found connector Node, or null if not found.
      */
     private Node findVisualConnectorForNode(final GameNode logicalNode,
-                                            final boolean out)
+                                            final boolean outputConnector)
     {
         if (logicalNode == null)
         {
@@ -737,7 +825,7 @@ public final class ResourceRouterMainMenu
         }
 
         final String prefix;
-        if (out)
+        if (outputConnector)
         {
             prefix = CONNECTOR_OUT;
         }
@@ -749,7 +837,7 @@ public final class ResourceRouterMainMenu
         final String connectorId;
         final Node connector;
 
-        connectorId = prefix + logicalNode.getId();
+        connectorId = prefix + logicalNode.getNodeId();
         connector   = gamePane.lookup("#" + connectorId);
 
         return connector;
@@ -757,9 +845,13 @@ public final class ResourceRouterMainMenu
 
 
     /*
-     * Highlights the connector of a given GameNode, clearing existing highlights first.
+     * Highlights the output connector of the specified GameNode to indicate selection.
      *
-     * @param node the GameNode to highlight.
+     * First clears any existing selection highlight, then locates the output connector of the given node
+     * and adds the "connector-selected" style class to it.
+     *
+     *
+     * @param node the GameNode whose output connector should be highlighted.
      */
     private void highlightConnectorForNode(final GameNode node)
     {
@@ -775,23 +867,33 @@ public final class ResourceRouterMainMenu
         }
     }
 
-    /**
-     * Clears the 'selected' style from any connector node.
+    /*
+     * Clears any selection highlight from connector Nodes.
+     *
+     * Iterates over all children of gamePane, filtering for those with the "connector-selected"
+     * style class, and removes that style class.
+     *
      */
     private void clearSelectionHighlight()
     {
         gamePane.getChildren().stream()
-                              .filter(n -> n != null &&
-                              n.getStyleClass()
+                              .filter(node -> node != null &&
+                              node.getStyleClass()
                               .contains(CONNECTOR_SELECTED_STYLE_CLASS))
-                              .forEach(n -> n.getStyleClass()
+                              .forEach(node -> node.getStyleClass()
                               .remove(CONNECTOR_SELECTED_STYLE_CLASS));
     }
 
     /*
-     * Sets up key handling for the specified Scene (keyboard shortcuts).
+     * Sets up a key handler on the given Scene to enable keyboard shortcuts.
      *
-     * @param scene the Scene to attach key handlers to.
+     * The handler listens for key presses and, depending on the key and current game state, triggers actions:
+     *
+     * Key 'E' toggles simulation start/stop if the game is in PLAYING state.
+     * Key 'R' resets pipes if simulation is not active.
+     * ESCAPE returns the game state to MENU if not already in MENU.
+     *
+     * @param scene the Scene on which to attach the key handler.
      */
     private void setupSceneKeyHandler(final Scene scene)
     {
@@ -806,7 +908,7 @@ public final class ResourceRouterMainMenu
                     handleStartStopClick();
                 }
                 else if (code == KeyCode.R &&
-                        !gameController.isSimulationRunning())
+                        !gameController.isSimulationActive())
                 {
                     gameController.resetFailedAttemptPipes();
                 }
@@ -821,7 +923,17 @@ public final class ResourceRouterMainMenu
     }
 
     /*
-     * Handles the start/stop simulation logic when the corresponding button is clicked.
+     * Handles the logic to start or stop the simulation when the corresponding button is clicked.
+     *
+     * This method first verifies that the current game state is PLAYING. If not, it does nothing.
+     * When in PLAYING state, it checks whether the simulation is active:
+     *
+     * If the simulation is not active, it invokes the GameController to start the simulation.</li>
+     * If the simulation is already active, it instructs the GameController to stop the simulation,
+     * passing a pre-defined manual stop message.
+     *
+     * This method is intended to be invoked by the action handler of the start/stop button.
+     *
      */
     private void handleStartStopClick()
     {
@@ -829,7 +941,7 @@ public final class ResourceRouterMainMenu
         {
             return;
         }
-        if (!gameController.isSimulationRunning())
+        if (!gameController.isSimulationActive())
         {
             gameController.startSimulation();
         }
@@ -840,9 +952,15 @@ public final class ResourceRouterMainMenu
     }
 
     /*
-     * Applies CSS styles to the given scene.
+     * Applies the external CSS styles to the provided Scene.
      *
-     * @param scene the Scene to style.
+     * The method attempts to locate the stylesheet resource using the STYLESHEET_PATH constant.
+     * If the stylesheet is found, its external form URL is added to the scene’s stylesheets.
+     * If the stylesheet cannot be located (resulting in a NullPointerException), an error message
+     * is printed to the error stream.
+     *
+     *
+     * @param scene the JavaFX Scene to which the CSS styles should be applied.
      */
     private void applyStyles(final Scene scene)
     {
@@ -857,14 +975,19 @@ public final class ResourceRouterMainMenu
         }
         catch (final NullPointerException e)
         {
-            System.err.println(CSS_LOAD_FAIL_PREFIX + e);
+            throw new IllegalArgumentException("Failed to load stylesheet: " + STYLESHEET_PATH, e);
         }
     }
 
     /*
-     * Updates the UI based on the given GameState.
+     * Updates the UI components' visibility and layout based on the specified game state.
      *
-     * @param state the new GameState.
+     * This method adjusts the visibility and managed properties of the menu overlay, game over overlay,
+     * and the main game view pane according to the new state. For non-visible states, it ensures that
+     * the overlay corresponding to MENU or GAME_OVER is brought to the front.
+     *
+     *
+     * @param state the new GameState to which the UI should adapt.
      */
     private void updateUIForState(final GameState state)
     {
@@ -896,9 +1019,13 @@ public final class ResourceRouterMainMenu
     }
 
     /*
-     * Updates the final score label in the Game Over overlay.
+     * Updates the final score label displayed on the Game Over overlay.
      *
-     * @param score the final score to display.
+     * This method attempts to locate the Label node with the specific final score label ID
+     * within the game over overlay and, if found, updates its text to reflect the provided final score.
+     *
+     *
+     * @param score the final score to be displayed.
      */
     private void updateGameOverScore(final int score)
     {
@@ -912,7 +1039,13 @@ public final class ResourceRouterMainMenu
     }
 
     /**
-     * Launches the game via JavaFX Platform.runLater mechanism.
+     * Launches the Resource Router game application on the JavaFX Application Thread.
+     * <p>
+     * This static method uses Platform.runLater() to ensure that the UI initialization
+     * and stage creation occur on the JavaFX thread. It creates a new Stage, instantiates a new
+     * ResourceRouter application, calls its start() method, and brings the stage to the front.
+     * If any exception occurs during the launch process, a message is printed to the console.
+     * </p>
      */
     public static void launchGame()
     {
@@ -922,7 +1055,7 @@ public final class ResourceRouterMainMenu
                 final Application newGame;
 
                 stage   = new Stage();
-                newGame = new ResourceRouterMainMenu();
+                newGame = new ResourceRouter();
                 newGame.start(stage);
                 stage.show();
                 stage.toFront();
@@ -930,16 +1063,22 @@ public final class ResourceRouterMainMenu
             }
             catch (final Exception e)
             {
-                System.out.println("Cannot launch game." + e.getMessage());
                 e.printStackTrace();
             }
         });
     }
 
     /**
-     * Changes the game state and updates the UI accordingly.
+     * Changes the current game state to the specified new state and updates the UI accordingly.
+     * <p>
+     * This method first checks if the new state is already active; if so, it does nothing.
+     * For the LEVEL_COMPLETE state, it clears selection highlights, updates UI elements,
+     * and disables/enables relevant buttons. For other states, it uses a fade-out transition on the root
+     * pane; upon completion, it changes the state, updates the UI (including clearing selections and updating overlays),
+     * and then applies a fade-in transition to smoothly reveal the new state.
+     * </p>
      *
-     * @param newState the new GameState.
+     * @param newState the new GameState to transition to.
      */
     public void changeGameState(final GameState newState)
     {
@@ -1001,8 +1140,12 @@ public final class ResourceRouterMainMenu
 
     /**
      * Updates the prompt label text in a thread-safe manner.
+     * <p>
+     * This method schedules a UI update on the JavaFX Application Thread via Platform.runLater().
+     * If the prompt label exists, its text is updated to the specified message.
+     * </p>
      *
-     * @param message the text to set.
+     * @param message the new prompt message to display.
      */
     public void updatePrompt(final String message)
     {
@@ -1016,8 +1159,12 @@ public final class ResourceRouterMainMenu
 
     /**
      * Updates the status label text in a thread-safe manner.
+     * <p>
+     * This method schedules a UI update on the JavaFX Application Thread. If the status label exists,
+     * its text is updated to the specified message prefixed with a defined status label prefix.
+     * </p>
      *
-     * @param message the status message.
+     * @param message the new status message to display.
      */
     public void updateStatus(final String message)
     {
@@ -1030,9 +1177,14 @@ public final class ResourceRouterMainMenu
     }
 
     /**
-     * Updates the timer display label.
+     * Updates the timer display label to show the new time value.
+     * <p>
+     * The method clamps the timer value to a minimum threshold, formats it using a predefined time format,
+     * and then updates the timer label's text. It also adjusts the timer label's style classes to reflect
+     * low or critical time conditions.
+     * </p>
      *
-     * @param timer the new time value.
+     * @param timer the new timer value in seconds.
      */
     public void updateTimer(final double timer)
     {
@@ -1061,20 +1213,25 @@ public final class ResourceRouterMainMenu
     }
 
     /**
-     * Updates the level display label to show the current level index.
+     * Updates the level display label to reflect the current level number and total available levels.
      *
-     * @param num the current level number.
+     * The label is updated to display a string formatted as "Level: current/total" where
+     * "current" is the current level number and "total" is the size of the level sequence.
+     * If the level information is unavailable, a placeholder is shown.
+     *
+     *
+     * @param levelNumber the current level number.
      */
-    public void updateLevelDisplay(final int num)
+    public void updateLevelDisplay(final int levelNumber)
     {
         Platform.runLater(() -> {
             if (levelLabel     != null &&
                 gameController != null &&
-                gameController.levelSequenceForSession != null)
+                gameController.getLevelSequence() != null)
             {
                 final String displayText;
-                displayText = LEVEL_LABEL_PREFIX + num + "/" +
-                              gameController.levelSequenceForSession.size();
+                displayText = LEVEL_LABEL_PREFIX + levelNumber + "/" +
+                              gameController.getLevelSequence().size();
 
                 levelLabel.setText(displayText);
             }
@@ -1086,9 +1243,13 @@ public final class ResourceRouterMainMenu
     }
 
     /**
-     * Updates the score display label to show the current score.
+     * Updates the score display label with the provided score.
+     * <p>
+     * This method formats the score using a predefined score prefix and updates the corresponding label.
+     * The update is done on the JavaFX Application Thread to ensure thread safety.
+     * </p>
      *
-     * @param score the current score.
+     * @param score the current score to display.
      */
     public void updateScoreDisplay(final int score)
     {
@@ -1103,10 +1264,21 @@ public final class ResourceRouterMainMenu
     }
 
     /**
-     * Updates button states (Start/Stop, Reset, Quit, Next Level) based on simulation and level status.
+     * Updates the states of the game control buttons (Start/Stop, Reset, Quit, Next Level) based on the
+     * current simulation activity and level completion status.
+     * <p>
+     * This method ensures that the buttons are shown or hidden (and enabled or disabled) appropriately:
+     * <ul>
+     *   <li>If the game is in PLAYING state and the level is not complete, it enables the start/stop and reset buttons,
+     *       configuring the start/stop button text based on whether the simulation is active.</li>
+     *   <li>If the level is complete, it shows the next level button and disables other controls as needed.</li>
+     *   <li>Otherwise, it disables all control buttons.</li>
+     * </ul>
+     * The update is performed on the JavaFX Application Thread.
+     * </p>
      *
-     * @param isSimRunning  true if the simulation is running.
-     * @param levelComplete true if the current level is complete.
+     * @param isSimRunning  true if the simulation is currently active.
+     * @param levelComplete true if the current level has been completed.
      */
     public void updateButtonStates(final boolean isSimRunning,
                                    final boolean levelComplete)
@@ -1167,17 +1339,30 @@ public final class ResourceRouterMainMenu
     }
 
     /**
-     * Called by JavaFX to start the application stage.
+     * Starts the application stage by initializing the UI, setting up event handlers,
+     * and launching the game view.
+     * <p>
+     * This method performs the following tasks:
+     * <ol>
+     *   <li>Obtains a reference to the primary stage and sets its title.</li>
+     *   <li>Creates a root StackPane and sets it as the container for the game view pane, overlays, and grid background.</li>
+     *   <li>Invokes helper methods to initialize the prompt label, game view layout, main menu overlay, and game over overlay.</li>
+     *   <li>Attaches the grid background to the root pane.</li>
+     *   <li>Instantiates the GameController with references to the ResourceRouter and game pane.</li>
+     *   <li>Creates a Scene with the root pane, applies CSS styles, and sets up mouse and keyboard event handlers.</li>
+     *   <li>Finally, sets the scene on the primary stage, shows the stage, and updates the UI to the MENU state.</li>
+     * </ol>
+     * </p>
      *
      * @param primary the primary Stage provided by the JavaFX runtime.
      */
     @Override
     public void start(final Stage primary)
     {
-        final Stage stageRef;
-        final StackPane rootPane;
-        final GameController controller;
-        final Scene scene;
+        final Stage             stageRef;
+        final StackPane         rootPane;
+        final GameController    controller;
+        final Scene             scene;
 
         stageRef        = primary;
         primaryStage    = stageRef;

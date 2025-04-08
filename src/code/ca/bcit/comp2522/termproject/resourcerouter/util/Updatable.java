@@ -40,8 +40,8 @@ public interface Updatable
      * @param controller the {@link GameController} providing access to shared game state
      *                   and control interfaces such as simulation status, scoring, and UI feedback.
      */
-    void update(double deltaTime,
-                GameController controller);
+    void update(final double deltaTime,
+                final GameController controller);
 
     /**
      * Resets the internal state of this object to its initial/default configuration.

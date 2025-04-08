@@ -1,0 +1,145 @@
+Braeden Duval Set D
+A01425746
+
+Prompts.txt provides a detailed overview of my experience using an AI tool
+(ChatGPT) during the development of my term project.
+I break down the best and worst parts of the interaction across various phases:
+Brainstorming, Development, Testing & Debugging, and Finalizing.
+
+========================================================================
+Phase 1: Brainstorming & Planning
+========================================================================
+Best Parts:
+- Initial Idea Generation:
+  I started with two ideas—a 2048-style game and a rhythm game using my own music. I used AI to quickly
+  outline the pros and cons of both concepts. A prompt like, “Here are my ideas for my Java game; can you develop
+  a timeline needed to accomplish my goals within the next month?” generated a detailed, day-by-day schedule.
+
+- Clear Timeline Creation:
+  The AI was surprisingly effective at breaking down the month into manageable tasks, enabling me to set short-term
+  milestones. It helped me refine my requirements and provided structure to the project from the very beginning.
+
+- Project Structure Assistance:
+  When I was uncertain about how to plan all the classes needed for my custom game, the AI helped me draft a basic
+  project structure. By feeding it detailed requirements and referencing class relationships,
+  I quickly generated an outline that became the blueprint for the game.
+
+- Checklist Development:
+  The iterative conversation with the AI resulted in a comprehensive checklist of features and requirements.
+  This checklist was valuable in keeping my project organized and ensuring I did not overlook any critical aspect.
+
+Worst Parts:
+- Limited Context Retention:
+  Although the AI helped initially, its small context window meant I had to reintroduce previous information
+  multiple times. This was particularly frustrating when trying to maintain continuity in the brainstorming phase.
+
+- Dependency on Detailed Prompts:
+  While detailed prompts yielded better results, it also meant spending extra time crafting precise questions.
+  A slight vagueness would lead to less useful output, requiring multiple revisions to get the intended detail.
+
+========================================================================
+Phase 2: Development
+========================================================================
+Best Parts:
+- Concept Explanations and Tutoring:
+  The AI served as a rapid tutor, quickly explaining JavaFX concepts and other technical details. This saved me
+  hours of searching for tutorials and allowed me to get back on track with minimal downtime.
+
+- Structural Guidance in Code:
+  When I needed guidance on implementing complex logic—such as drawing pipelines to connect nodes, the AI was useful
+  in pointing out holes in my logic. It suggested strategies to simplify the process, helping me rework my approach.
+
+- Quick Brainstorming for Revisions:
+  Faced with a design challenge (like incorporating a “twist” in the rhythm game), I spent three days discussing
+  ideas with the AI. Although progress was slow, the brainstorming sessions helped me evaluate different directions
+  before switching to a new project concept (Resource Router).
+
+Worst Parts:
+- Inconsistent Code Quality:
+  The AI often provided pseudocode that looked promising on paper but failed miserably in implementation.
+  For example, its detailed summary for combining color logic failed 80% of the time when executed,
+  forcing me to rework the logic entirely.
+
+- Frustration with Limited Persistence:
+  Constantly having to re-prompt the AI with previous work was a major roadblock. This lack of memory disrupted
+  my workflow and often led to delays, as I had to invest time in re-establishing context.
+
+- Poor Styling Suggestions:
+  Despite strict guidelines, the AI’s code styling suggestions were consistently poor. I ended up spending hours
+  manually fixing and optimizing the styling, which detracted from the development progress.
+
+========================================================================
+Phase 3: Testing, Debugging & Finalizing
+========================================================================
+Best Parts:
+- Targeted Debugging Assistance:
+  During testing, the AI helped me pinpoint where certain pieces of logic were located within my code.
+  This was particularly useful when I couldn’t remember how a specific section was implemented.
+
+- Innovative Testing Solutions:
+  I encountered challenges testing abstract classes, particularly for the GameNode class.
+  The AI offered a detailed walkthrough on creating a “Dummy” class for testing purposes,
+  which was one of its few consistent successes.
+
+- Efficiency in Problem Identification:
+  In some cases, when error states were misfiring or components were not connecting correctly
+  (such as circles only connecting to one square), the AI’s suggestions led to quicker identification of
+  issues—allowing for faster fixes.
+
+Worst Parts:
+- Ineffective UI Debugging:
+  AI support for JavaFX-related issues was virtually unhelpful. On multiple occasions, its recommendations led me
+  in circles without resolving the problem. This was especially problematic when I needed to address error states
+  triggering at inappropriate times.
+
+- Scope Creep:
+  As my project evolved, the AI’s explanations and tutorial suggestions sometimes introduced new problems or
+  expanded the scope unnecessarily. This resulted in wasted time and increased frustration, leading me to
+  eventually abandon AI for final fixes.
+
+- Lack of Context in Complex Debugging:
+  When debugging intricate issues, such as parsing level files and maintaining recipes for level creation,
+  the AI often forgot earlier parts of the conversation. This lack of sustained context forced me to spend
+  extra time re-establishing background information.
+
+========================================================================
+Final Reflections & Overall Advantages/Disadvantages
+========================================================================
+Advantages:
+- Effective Planning and Timeline Tool: AI helped me establish a clear, actionable schedule for my project.
+
+- Useful for Brainstorming: It provided a wide range of ideas and refined my project’s structure,
+  which was essential during the early phases.
+
+- Helpful Explanations: Acting as a personal tutor, the AI clarified difficult concepts like JavaFX,
+  which accelerated my learning.
+
+- Problem-Solving Guidance: Its insights into my code logic often pointed out areas for improvement,
+  aiding in refining complex functionalities.
+
+- Rapid Adjustments: In debugging, AI’s quick pointers allowed me to make targeted changes swiftly.
+
+Disadvantages:
+- Limited Context and Memory: Repeated re-prompting was required, resulting in delays and fragmented development.
+
+- Unreliable Code Generation: The quality of code output was inconsistent, often needing extensive rework.
+
+- Poor Code Styling: AI-generated styling suggestions were suboptimal, leading to significant manual rework.
+
+- Difficulty with Advanced Explanations: The AI struggled with deeper, nuanced explanations required
+  for advanced features.
+
+- Inconsistent UI Debugging: Its inability to effectively troubleshoot JavaFX issues was a major drawback.
+
+- Scope Creep: Over-reliance on AI for iterative suggestions sometimes expanded the project scope unnecessarily.
+
+- Increased Frustration: The combination of context loss and unreliable outputs occasionally hindered
+  progress rather than helping it.
+
+========================================================================
+Conclusion
+========================================================================
+Overall, my experience with AI was a mixed bag. While it excelled as a brainstorming partner and provided
+efficient planning and rapid troubleshooting in some cases, its limitations—especially in code quality,
+context retention, and UI debugging—presented significant challenges. The interaction with AI was a powerful tool
+when used carefully and aided by my own critical thinking.

@@ -24,48 +24,98 @@ import javafx.util.Duration;
 import java.util.*;
 
 /**
- * The SinkNode class represents a sink node in the Resource Router game,
- * responsible for consuming incoming resources based on a predefined demand map.
+ * SinkNode represents a sink node in the Resource Router game, responsible for consuming incoming resources
+ * according to a predetermined resource demand map.
  * <p>
- * Each SinkNode is constructed with a map specifying the quantity of each {@link ResourceType}
- * required to satisfy it. As resources are delivered via incoming pipes, the node deducts
- * from its current demand. When all required resources have been received, the node is considered
- * "satisfied" and its visual appearance changes to indicate a win state.
+ * Each SinkNode is configured with an initial demand—a mapping of ResourceType to the number of units required—
+ * which remains constant throughout the node’s lifetime. The node maintains a mutable current demand that is updated
+ * as resources are received. When resources arrive via incoming pipes, SinkNode deducts the appropriate amounts
+ * from its current demand. When all demanded resources have been received (i.e. every entry in the current demand
+ * map has a value of zero or less), the sink is considered satisfied, and its visual appearance changes to indicate
+ * a win state (for example, filling the node with a win color such as gold).
  * </p>
  * <p>
- * The visual representation of a SinkNode is an octagon (created using a {@link Polygon}).
- * Its fill is updated dynamically:
+ * Visually, a SinkNode is represented by an octagon that is constructed using a Polygon, with a dynamic fill that
+ * changes based on its state:
  * <ul>
- *   <li>If multiple resource demands remain, a linear gradient (formed by the unsatisfied resource colors)
- *   is used.</li>
- *   <li>If only one resource type remains, a solid fill is applied.</li>
- *   <li>If the sink is fully satisfied, the node is filled with a win color
- *   (lime green) and plays a continuous rotation animation.</li>
- *   <li>If the sink receives an unexpected resource or extra input,
- *   it enters an error state: the fill turns red and the simulation halts.</li>
+ *   <li>If unsatisfied, the fill is determined by the remaining resources: a solid color is used when only one
+ *       resource type is required, or a linear gradient is constructed if multiple resources remain.</li>
+ *   <li>If fully satisfied, the fill changes to a win color (lime green) and a
+ *       continuous rotation animation is triggered.</li>
+ *   <li>If an error condition occurs—such as receiving a resource that is not demanded or exceeding the required
+ *       quantity—the node enters an error state, its fill turns red, and an error indicator is displayed via an
+ *       info label.</li>
  * </ul>
  * </p>
  * <p>
- * Additionally, demand indicators are overlaid on the sink to provide visual feedback for unsatisfied demands.
+ * The SinkNode also manages demand indicators which provide visual feedback on unsatisfied resource requirements.
+ * These indicators are arranged in a FlowPane overlay that is transparent to mouse events. An error message may also
+ * be displayed through a Label when the node is in error state.
+ * </p>
+ * <p>
+ * The node’s update cycle (invoked on each simulation tick via the update method) carries out the following steps:
+ * <ol>
+ *   <li>If the simulation is not running (as determined by a GameController),
+ *       the node only updates its visual state.</li>
+ *   <li>If the sink is satisfied (all demanded resources have been fulfilled), it clears any residual resources from
+ *       its incoming pipes and updates the corresponding visuals.</li>
+ *   <li>If the sink is not yet satisfied, it iterates over all incoming pipes:
+ *       <ul>
+ *         <li>For each pipe that has a resource:
+ *             <ul>
+ *               <li>If the resource matches an entry in the demand map and the current demand is greater than zero,
+ *                   the node decrements the demanded count, resets the error tick counter, clears the resource from the
+ *                   pipe, and updates the pipe’s visual.</li>
+ *               <li>If the resource is not part of the demand or exceeds the required amount, the node increments an
+ *                   error tick counter. Once the counter exceeds a predefined threshold, the node enters an error state
+ *                   and signals the GameController to halt the simulation.</li>
+ *             </ul>
+ *         </li>
+ *       </ul>
+ *   </li>
+ *   <li>After processing, the node refreshes its visual state to reflect the latest demand,
+ *       satisfaction, or error status.</li>
+ * </ol>
+ * </p>
+ * <p>
+ * Additionally, SinkNode provides methods for resetting its state:
+ * <ul>
+ *   <li>{@code resetState()} clears the current demand (restoring it from the initial demand), resets error flags
+ *       and counters, stops any ongoing animations, and updates the visual appearance accordingly.</li>
+ *   <li>{@code clearErrorStateOnly()} selectively clears only the error state and resets animations without altering
+ *       the current demand.</li>
+ * </ul>
+ * </p>
+ * <p>
+ * Visual elements specific to SinkNode include:
+ * <ul>
+ *   <li>An octagon body (created via the {@code createOctagon()} helper method) that serves as the primary visual
+ *       component. Its fill is dynamically updated via {@code updateFill()} based on the node's current demand
+ *       or error state.</li>
+ *   <li>A FlowPane that displays demand indicators, arranged with specified gaps, padding, and wrap length.</li>
+ *   <li>An optional info label, used primarily for error notification.</li>
+ *   <li>Two types of animations—RotateTransition for continuous rotation when satisfied and ScaleTransition for a
+ *       pulsing effect—that provide visual feedback of active processing.</li>
+ * </ul>
  * </p>
  *
- * @author Braeden
+ * @author Braeden Duval
  * @version 1.0
  */
 
-public final class SinkNode extends GameNode
+public final class SinkNode
+             extends GameNode
 {
 
     private static final String NODE_WAITING_STYLE_CLASS   = "node-waiting";
     private static final String NODE_SATISFIED_STYLE_CLASS = "node-satisfied";
     private static final String SINK_ERROR_STATE_TEXT      = "sink-error-symbol";
     private static final String EMPTY_STRING               = "";
+    private static final String NODE_BODY_STYLE_CLASS      = "node";
 
     private static final double RADIUS                                  = 30.0;
     private static final double NODE_DIAMETER_MULTIPLIER                = 2.0;
     private static final double CONNECTOR_SIZE                          = 10.0;
-    private static final double HALF_CONNECTOR_SIZE                     = CONNECTOR_SIZE / 2.0;
-    private static final double INPUT_CONNECTOR_OFFSET_X                = -RADIUS;
     private static final double INPUT_CONNECTOR_OFFSET_Y                = 0.0;
     private static final double DEMAND_INDICATOR_PADDING                = 5.0;
     private static final double DEMAND_INDICATOR_PREF_WRAP_MULTIPLIER   = 1.8;
@@ -74,12 +124,15 @@ public final class SinkNode extends GameNode
     private static final double RESET_ROTATION_ANGLE                    = 0.0;
     private static final double OCTAGON_ANGLE_STEP_DEGREES              = 45.0;
     private static final double OCTAGON_INITIAL_ANGLE_OFFSET            = -22.5;
-    private static final double OUTPUT_CONNECTOR_OFFSET_VALUE           = Double.NaN;
     private static final double GRADIENT_LEFT_HALF                      = 0.0;
     private static final double GRADIENT_MIDDLE                         = 0.5;
     private static final double GRADIENT_RIGHT_HALF                     = 1.0;
     private static final double SET_FROM_VALUE                          = 1.0;
     private static final double SET_TO_VALUE                            = 1.2;
+
+    private static final double HALF_CONNECTOR_SIZE;
+    private static final double INPUT_CONNECTOR_OFFSET_X;
+    private static final double OUTPUT_CONNECTOR_OFFSET_VALUE;
 
     private static final int SCALE_DURATION                  = 1;
     private static final int FLOW_PANE_HGAP                  = 2;
@@ -93,36 +146,62 @@ public final class SinkNode extends GameNode
     private static final int SECOND_COLOUR                   = 1;
     private static final int ERROR_TICK_THRESHOLD            = 3;
 
-    public static final String STYLE_CLASS = "sink-node";
+    private static final String STYLE_CLASS = "sink-node";
 
     private final Map<ResourceType, Integer> initialDemand;
     private final Map<ResourceType, Integer> currentDemand;
 
     private int                 errorTickCounter;
-    private boolean             isInErrorState = false;
+    private boolean             errorState;
     private Polygon             bodyShape;
     private RotateTransition    rotateTransition;
     private ScaleTransition     pulseTransition;
     private Label               infoLabelVisual;
 
+    static
+    {
+        HALF_CONNECTOR_SIZE = CONNECTOR_SIZE / 2.0;
+        INPUT_CONNECTOR_OFFSET_X = -RADIUS;
+        OUTPUT_CONNECTOR_OFFSET_VALUE = Double.NaN;
+    }
+
+    {
+        errorState = false;
+    }
+
     /**
-     * Constructs a new SinkNode with the specified id, position, and demand map.
+     * Constructs a new SinkNode with the specified nodeId, coordinates, and resource demand.
      *
-     * @param id        the identifier for the node
-     * @param x         the x-coordinate of the node
-     * @param y         the y-coordinate of the node
-     * @param demandMap a map representing the resource demand for the node
-     * @throws NullPointerException     if the demandMap is null
-     * @throws IllegalArgumentException if the demandMap is empty or contains non-positive demand values
+     * <p>
+     * The constructor performs several validation steps:
+     * <ol>
+     *   <li>Validates that the demand map is non-null, non-empty, and that every resource key
+     *       is non-null with a positive quantity. If validation fails, an exception is thrown.</li>
+     *   <li>Saves an immutable copy of the initial demand and initializes a mutable currentDemand map.</li>
+     *   <li>Calls resetState() to initialize the node’s runtime state
+     *       (clearing any errors, resetting counters, etc.).</li>
+     * </ol>
+     * </p>
+     *
+     * @param nodeId        the unique identifier for the node
+     * @param xCoordinate         the xCoordinate-coordinate of the node's center
+     * @param yCoordinate         the yCoordinate-coordinate of the node's center
+     * @param demandMap a map mapping ResourceType to the required quantity; must be non-null and non-empty
+     *
+     * @throws NullPointerException if the demand map is null
+     * @throws IllegalArgumentException if the demand map is empty or contains non-positive values
+     *
      */
-    public SinkNode(final String id,
-                    final double x,
-                    final double y,
+    public SinkNode(final String nodeId,
+                    final double xCoordinate,
+                    final double yCoordinate,
                     final Map<ResourceType, Integer> demandMap)
     {
-        super(id, x, y);
+        super(nodeId,
+              xCoordinate,
+              yCoordinate);
 
-        validateDemandMap(demandMap, id);
+        validateDemandMap(demandMap, nodeId);
 
         this.initialDemand = new LinkedHashMap<>(demandMap);
         this.currentDemand = new HashMap<>();
@@ -133,23 +212,29 @@ public final class SinkNode extends GameNode
     /*
      * Ensures the demand map is not null, not empty, and that all values are positive.
      *
+     * Iterates through each entry verifying
+     * that each ResourceType key is not null and that each quantity is positive.
+     *
      * @param demandMap the map of resource demands
      * @param nodeId    the identifier of the node (for error messages)
      *
      * @throws NullPointerException     if demandMap is null
      * @throws IllegalArgumentException if demandMap is empty or contains invalid demand quantities
+     *
      */
     private static void validateDemandMap(final Map<ResourceType, Integer> demandMap,
                                           final String nodeId)
     {
-        Objects.requireNonNull(demandMap, "Demand map cannot be null for node " + nodeId);
+        Objects.requireNonNull(demandMap,
+                               "Demand map cannot be null for node " +
+                               nodeId);
 
         if (demandMap.isEmpty())
         {
             throw new IllegalArgumentException("Demand map is empty for node " + nodeId);
         }
 
-        for (Map.Entry<ResourceType, Integer> entry : demandMap.entrySet())
+        for (final Map.Entry<ResourceType, Integer> entry : demandMap.entrySet())
         {
             if (entry.getKey() == null)
             {
@@ -173,9 +258,16 @@ public final class SinkNode extends GameNode
     }
 
     /*
-     * Creates an octagon (Polygon) centered in a square of size 2 * radius.
+     * Creates a new Polygon to represent an octagon.
      *
-     * @return the Polygon representing the octagon.
+     * For each of the OCTAGON_SIDES, calculates the vertex position using:
+     *   angle (in degrees) = (OCTAGON_ANGLE_STEP_DEGREES * i) + OCTAGON_INITIAL_ANGLE_OFFSET,
+     *   then converts to radians and computes (x, y) as:
+     *        vertexX = center + RADIUS * cos(angle)
+     *        vertexY = center + RADIUS * sin(angle)
+     *
+     * Adds these vertices to the Polygon's point list and returns the Polygon.
+     *
      */
     private Polygon createOctagon()
     {
@@ -187,24 +279,32 @@ public final class SinkNode extends GameNode
 
         for (int i = 0; i < OCTAGON_SIDES; i++)
         {
-            final double angleDeg;
-            final double angleRad;
-            final double vx;
-            final double vy;
+            final double angleDegree;
+            final double angleRadius;
+            final double vertexX;
+            final double vertexY;
 
-            angleDeg= OCTAGON_ANGLE_STEP_DEGREES * i + OCTAGON_INITIAL_ANGLE_OFFSET;
-            angleRad= Math.toRadians(angleDeg);
-            vx = center + RADIUS * Math.cos(angleRad);
-            vy = center + RADIUS * Math.sin(angleRad);
-            octagon.getPoints().addAll(vx, vy);
+            angleDegree    = OCTAGON_ANGLE_STEP_DEGREES * i + OCTAGON_INITIAL_ANGLE_OFFSET;
+            angleRadius    = Math.toRadians(angleDegree);
+            vertexX        = center + RADIUS * Math.cos(angleRadius);
+            vertexY        = center + RADIUS * Math.sin(angleRadius);
+            octagon.getPoints().addAll(vertexX, vertexY);
         }
         return octagon;
     }
 
     /*
-     * Updates the fill of the sink node based on the unsatisfied demand.
-     * Uses a solid color if only one resource type remains, a linear gradient if multiple remain,
-     * or red if in error state.
+     * Updates the fill of the bodyShape based on the current state:
+     *
+     *  a. If errorState is true, sets the fill to red.
+     *  b. Otherwise, checks the remaining demands:
+     *     - If no resources are still required, fills with lime green.
+     *     - If only one resource type remains unsatisfied, uses a solid fill of that resource's display color.
+     *     - If multiple resource types remain, computes a linear gradient from the
+     *          colors of the first two resources.
+     *
+     * Sets the fill on the bodyShape accordingly.
+     *
      */
     private void updateFill()
     {
@@ -213,7 +313,7 @@ public final class SinkNode extends GameNode
             return;
         }
 
-        if (isInErrorState)
+        if (errorState)
         {
             bodyShape.setFill(Color.RED);
             return;
@@ -244,10 +344,16 @@ public final class SinkNode extends GameNode
     }
 
     /*
-     * Produces a linear gradient for sinks with two demands.
+     * Given a list of Colors (expected to have at least two colors), constructs a linear gradient:
+     *  a. Retrieves the left and right colors from the list (first and second).
      *
-     * @param colors each color in the gradient.
-     * @return the LinearGradient for the sink node.
+     *  b. Creates an array of Stops with positions at GRADIENT_LEFT_HALF, GRADIENT_MIDDLE (twice),
+     *     and GRADIENT_RIGHT_HALF corresponding to leftColor and rightColor.
+     *
+     *  c. Creates and returns a new LinearGradient configured with these stops,
+     *     spanning from position (GRADIENT_LEFT_HALF, GRADIENT_MIDDLE) to
+     *     (GRADIENT_MIDDLE, GRADIENT_RIGHT_HALF), with no cycle.
+     *
      */
     private static LinearGradient getLinearGradient(final List<Color> colors)
     {
@@ -278,7 +384,16 @@ public final class SinkNode extends GameNode
     }
 
     /*
-     * Updates the visual state of the node based on its error and demand satisfaction status.
+     * Updates the visual appearance of the SinkNode based on its current state.
+     *
+     * If errorState is true, fills the bodyShape with red, stops any animations, and shows an error indicator.
+     *
+     * If the sink is satisfied, sets the fill to a win color (e.g., gold), and starts rotation and pulse animations.
+     *
+     * Otherwise, calls updateFill() to update the fill based on the current input demands and stops animations.
+     *
+     * Also, if an info label exists, it is updated accordingly (for example, displaying an error symbol).
+     *
      */
     private void updateVisualState()
     {
@@ -289,7 +404,7 @@ public final class SinkNode extends GameNode
 
         bodyShape.getStyleClass().removeAll(NODE_WAITING_STYLE_CLASS, NODE_SATISFIED_STYLE_CLASS);
 
-        if (isInErrorState)
+        if (errorState)
         {
             bodyShape.setFill(Color.RED);
             rotateTransition.stop();
@@ -318,8 +433,12 @@ public final class SinkNode extends GameNode
 
     /**
      * Checks if the sink node has been fully satisfied.
+     * <p>
+     * It returns true if every resource in the current demand has a required quantity of zero or less.
+     * </p>
      *
      * @return true if all resource demands are met; false otherwise.
+     *
      */
     public boolean isSatisfied()
     {
@@ -332,20 +451,31 @@ public final class SinkNode extends GameNode
     }
 
     /**
-     * Checks if the sink node is currently in an error state.
+     * Checks whether the sink node is in an error state.
+     * <p>
+     * Returns true if the node has received an unexpected resource or extra input beyond its demand.
+     * </p>
      *
-     * @return true if in error state; false otherwise.
+     * @return true if the sink is in an error state; false otherwise.
+     *
      */
-    public boolean isInErrorState()
+    public boolean inErrorState()
     {
         final boolean inError;
-        inError= isInErrorState;
+        inError= errorState;
 
         return inError;
     }
 
     /**
-     * Resets the sink node state to its initial demand and clears any error state.
+     * Resets the sink node to its initial state.
+     *
+     * <p>
+     * This method restores the initial demands by copying the initialDemand map into the currentDemand map.
+     * It clears any errors, resets error tick counters, stops animations (such as rotation),
+     * resets the body rotation, updates the fill, and then calls updateVisualState to reflect the reset.
+     * </p>
+     *
      */
     @Override
     public void resetState()
@@ -358,7 +488,7 @@ public final class SinkNode extends GameNode
 
         currentDemand.clear();
         currentDemand.putAll(initialDemand);
-        isInErrorState = false;
+        errorState = false;
         errorTickCounter = DEFAULT_VALUE;
 
         if (bodyShape != null)
@@ -372,13 +502,19 @@ public final class SinkNode extends GameNode
     }
 
     /**
-     * Clears only the error flag and resets the fill color of the sink node.
+     * Clears only the error state of the sink node.
+     *
+     * <p>
+     * If the node is currently in an error state, this method resets the error flag and error tick counter,
+     * stops the rotation animation, resets the rotation of the body, updates the fill, and refreshes the visuals.
+     * </p>
+     *
      */
     public void clearErrorStateOnly()
     {
-        if (isInErrorState)
+        if (errorState)
         {
-            isInErrorState      = false;
+            errorState = false;
             errorTickCounter    = DEFAULT_VALUE;
 
             if (bodyShape != null)
@@ -393,43 +529,62 @@ public final class SinkNode extends GameNode
 
     /**
      * Creates the visual representation for the output connector.
-     * Sinks have no output connector, so this returns null.
+     *
+     * <p>
+     * Sinks do not have an output connector, so this method returns null.
+     * </p>
      *
      * @return null.
+     *
      */
     @Override
-    protected Shape createOutputConnectorVisual()
+    Shape createOutputConnectorVisual()
     {
         return null;
     }
 
     /**
-     * Creates the visual representation for the input connector.
+     * Creates and returns the visual representation for the input connector.
+     *
+     * <p>
+     * The input connector is depicted as a Rectangle. Its X coordinate is computed by adding INPUT_CONNECTOR_OFFSET_X
+     * (minus half of the connector size) to the node's x-coordinate, and its Y coordinate is computed similarly using
+     * INPUT_CONNECTOR_OFFSET_Y.
+     * </p>
      *
      * @return a Rectangle representing the input connector.
+     *
      */
     @Override
-    protected Shape createInputConnectorVisual()
+    Shape createInputConnectorVisual()
     {
-        final double cX;
-        final double cY;
-        final Rectangle rect;
+        final double connectorXCoordinate;
+        final double connectorYCoordinate;
+        final Rectangle rectangle;
 
-        cX      = x + INPUT_CONNECTOR_OFFSET_X - HALF_CONNECTOR_SIZE;
-        cY      = y + INPUT_CONNECTOR_OFFSET_Y - HALF_CONNECTOR_SIZE;
-        rect    = new Rectangle(cX, cY, CONNECTOR_SIZE, CONNECTOR_SIZE);
+        connectorXCoordinate      = getXCoordinate() + INPUT_CONNECTOR_OFFSET_X - HALF_CONNECTOR_SIZE;
+        connectorYCoordinate      = getYCoordinate() + INPUT_CONNECTOR_OFFSET_Y - HALF_CONNECTOR_SIZE;
+        rectangle                 = new Rectangle(connectorXCoordinate,
+                                                  connectorYCoordinate,
+                                                  CONNECTOR_SIZE,
+                                                  CONNECTOR_SIZE);
 
-        return rect;
+        return rectangle;
     }
 
     /**
-     * Creates the visual representation for the information label.
-     * For sinks, this is hidden unless an error occurs.
+     * Creates and returns the visual representation for the information label.
      *
-     * @return the Label for error indication.
+     * <p>
+     * For SinkNode, the information label is used for error display. It is styled with a specific class
+     * and initially hidden.
+     * </p>
+     *
+     * @return a Label initialized with an empty string, styled for error indication, and initially invisible.
+     *
      */
     @Override
-    protected Label createInfoLabelVisual()
+    Label createInfoLabelVisual()
     {
         final Label infoLabel;
 
@@ -441,27 +596,49 @@ public final class SinkNode extends GameNode
     }
 
     /**
-     * Creates and returns the visual representation of the node body.
+     * Creates and returns the visual representation of the sink node's body.
      *
-     * @return a Node representing the sink body.
+     * <p>
+     * The construction is as follows:
+     * <ol>
+     *   <li>Create a StackPane positioned such that its center aligns with the node's (x, y)
+     *       coordinates using RADIUS.</li>
+     *   <li>Create an octagon Polygon by calling createOctagon(); the octagon represents the sink's main body.
+     *       Apply the NODE_BODY_STYLE_CLASS and STYLE_CLASS to this shape.</li>
+     *   <li>Call updateFill() to set the initial fill color based on current demand and state.</li>
+     *   <li>Create a FlowPane for demand indicators with specified horizontal and vertical gaps, padding,
+     *       and a preferred wrap length based on RADIUS and a multiplier.</li>
+     *   <li>Make the FlowPane mouse transparent.</li>
+     *   <li>Create the info label visual if not already created.</li>
+     *   <li>Add the octagon, demand indicator pane, and info label into the StackPane.</li>
+     *   <li>Initialize animations: configure a RotateTransition (duration, angle, cycle count, interpolator)
+     *       for continuous rotation, and a ScaleTransition (duration, scale factors, auto-reverse) for pulsing.</li>
+     *   <li>Call updateVisualState() to ensure the node's visuals reflect its current state.</li>
+     * </ol>
+     * </p>
+     *
+     * @return the assembled Node representing the SinkNode's body.
+     *
      */
     @Override
-    protected Node createNodeBodyVisual()
+    Node createNodeBodyVisual()
     {
-        final StackPane vg;
-        vg = new StackPane();
-        vg.setLayoutX(x - RADIUS);
-        vg.setLayoutY(y - RADIUS);
-        vg.setPrefSize(RADIUS * NODE_DIAMETER_MULTIPLIER,
-                       RADIUS * NODE_DIAMETER_MULTIPLIER);
+        final StackPane nodeContainer;
+        nodeContainer = new StackPane();
+        nodeContainer.setLayoutX(getXCoordinate() - RADIUS);
+        nodeContainer.setLayoutY(getYCoordinate() - RADIUS);
+        nodeContainer.setPrefSize(RADIUS * NODE_DIAMETER_MULTIPLIER,
+                                  RADIUS * NODE_DIAMETER_MULTIPLIER);
 
         bodyShape = createOctagon();
-        bodyShape.getStyleClass().addAll(NODE_BODY_STYLE_CLASS, STYLE_CLASS);
+        bodyShape.getStyleClass().addAll(NODE_BODY_STYLE_CLASS,
+                                         STYLE_CLASS);
 
         updateFill();
 
         final FlowPane demandIndicatorPane;
-        demandIndicatorPane = new FlowPane(FLOW_PANE_HGAP, FLOW_PANE_VGAP);
+        demandIndicatorPane = new FlowPane(FLOW_PANE_HGAP,
+                                           FLOW_PANE_VGAP);
         demandIndicatorPane.setAlignment(javafx.geometry.Pos.CENTER);
         demandIndicatorPane.setPadding(new Insets(DEMAND_INDICATOR_PADDING));
         demandIndicatorPane.setPrefWrapLength(RADIUS * DEMAND_INDICATOR_PREF_WRAP_MULTIPLIER);
@@ -473,19 +650,21 @@ public final class SinkNode extends GameNode
             infoLabelVisual = createInfoLabelVisual();
         }
 
-        vg.getChildren().addAll(bodyShape,
+        nodeContainer.getChildren().addAll(bodyShape,
                                 demandIndicatorPane,
                                 infoLabelVisual);
 
-        this.nodeBodyVisual = vg;
+        this.nodeBodyVisual = nodeContainer;
 
-        rotateTransition = new RotateTransition(Duration.seconds(ROTATE_TRANSITION_DURATION_SECONDS), bodyShape);
+        rotateTransition = new RotateTransition(Duration.seconds(ROTATE_TRANSITION_DURATION_SECONDS),
+                                                bodyShape);
         rotateTransition.setFromAngle(RESET_ROTATION_ANGLE);
         rotateTransition.setByAngle(FULL_ROTATION_ANGLE);
         rotateTransition.setCycleCount(RotateTransition.INDEFINITE);
         rotateTransition.setInterpolator(Interpolator.LINEAR);
 
-        pulseTransition = new ScaleTransition(Duration.seconds(SCALE_DURATION), bodyShape);
+        pulseTransition = new ScaleTransition(Duration.seconds(SCALE_DURATION),
+                                              bodyShape);
         pulseTransition.setFromX(SET_FROM_VALUE);
         pulseTransition.setFromY(SET_FROM_VALUE);
         pulseTransition.setToX(SET_TO_VALUE);
@@ -494,13 +673,16 @@ public final class SinkNode extends GameNode
         pulseTransition.setAutoReverse(true);
 
         updateVisualState();
-        return vg;
+        return nodeContainer;
     }
 
     /**
-     * Returns the offset of the input connector.
+     * Returns the offset for the input connector.
+     * <p>
+     * Constructs a Point2D using the constants INPUT_CONNECTOR_OFFSET_X and INPUT_CONNECTOR_OFFSET_Y.
+     * </p>
      *
-     * @return a Point2D representing the input connector offset.
+     * @return a Point2D representing the input connector's offset.
      */
     @Override
     public Point2D getInputConnectorOffset()
@@ -513,8 +695,10 @@ public final class SinkNode extends GameNode
     }
 
     /**
-     * Returns the offset of the output connector.
-     * For sinks, this returns a Point2D with NaN values.
+     * Returns the offset for the output connector.
+     * <p>
+     * Since SinkNode does not have an output connector, this method returns a Point2D with NaN values.
+     * </p>
      *
      * @return a Point2D with NaN values.
      */
@@ -529,35 +713,49 @@ public final class SinkNode extends GameNode
     }
 
     /**
-     * Updates the sink node on each simulation tick by processing incoming resources from its pipes.
+     * Updates the SinkNode based on the simulation tick.
      * <p>
-     * The update cycle performs the following actions:
+     * The update cycle performs the following steps:
      * <ol>
-     *   <li>If the simulation is not running, the sink node updates its visual state and returns immediately.</li>
-     *   <li>If the sink is already satisfied (all required resource demands have been met), it clears any resources
-     *       present in its incoming pipes and updates their visuals.</li>
-     *   <li>If the sink is not satisfied, it iterates through each incoming pipe:
-     *     <ol type="a">
-     *       <li>If a pipe contains a resource that is part of the sink's demand and the current demand for that resource is greater than zero,
-     *           the resource is consumed. This is done by decrementing the required count in the {@code currentDemand} map,
-     *           clearing the resource from the pipe, and updating the pipe's visual. The error tick counter is also reset.</li>
-     *       <li>If a pipe contains a resource that is either not part of the demand or is extra (i.e. the demand is already met),
-     *           the error tick counter is incremented. If this counter reaches a defined threshold, the sink enters an error state,
-     *           its visual state is updated, and the simulation is stopped.</li>
-     *     </ol>
+     *   <li>If the simulation is not running (as determined by the GameController),
+     *       simply update the visual state and exit.</li>
+     *   <li>If the sink node is satisfied (i.e. all resource demands in currentDemand are zero or less),
+     *       clear any resource from incoming pipes:
+     *       <ul>
+     *         <li>Create a copy of the incoming pipes list.</li>
+     *         <li>For each pipe with a resource, clear its resource and
+     *             update the pipe's visuals via GameController.</li>
+     *         <li>Update the node's visual state and exit the update method.</li>
+     *       </ul>
      *   </li>
-     *   <li>After processing all pipes, the sink node updates its visual state to reflect the current status.</li>
+     *   <li>If the sink is not satisfied, iterate over a copy of incoming pipes and process each:
+     *       <ol type="a">
+     *         <li>Retrieve the resource from the pipe.</li>
+     *         <li>If the resource is part of the node's demand and the current demand is greater than zero:
+     *             <ul>
+     *               <li>Reset the error tick counter.</li>
+     *               <li>Clear the resource from the pipe and update the pipe's visual.</li>
+     *               <li>Decrement the demanded count in currentDemand for that resource.</li>
+     *             </ul>
+     *         </li>
+     *         <li>If the resource is not demanded or is excess, increment the error tick counter,
+     *             update the fill, and update the pipe visual.
+     *             If the error tick counter exceeds the ERROR_TICK_THRESHOLD,
+     *             set errorState to true and stop the simulation with an error message.</li>
+     *       </ol>
+     *   </li>
+     *   <li>Finally, update the visual state of the sink node to reflect any changes.</li>
      * </ol>
      * </p>
      *
-     * @param dt the elapsed time since the last simulation tick, in seconds.
-     * @param gc the {@link GameController} instance used for updating pipe visuals and managing the simulation.
+     * @param timeSeconds the elapsed time in seconds since the last tick (not used for logic in this method)
+     * @param gameController the GameController instance used to check simulation status, update pipe visuals, and stop the simulation if an error occurs
      */
     @Override
-    public void update(final double dt,
-                       final GameController gc)
+    public void update(final double timeSeconds,
+                       final GameController gameController)
     {
-        if (!gc.isSimulationRunning())
+        if (!gameController.isSimulationActive())
         {
             updateVisualState();
             return;
@@ -566,14 +764,14 @@ public final class SinkNode extends GameNode
         if (isSatisfied())
         {
             final List<Pipe> pipesToClear;
-            pipesToClear = new ArrayList<>(incomingPipes);
+            pipesToClear = new ArrayList<>(getIncomingPipes());
 
-            for (final Pipe p : pipesToClear)
+            for (final Pipe pipe : pipesToClear)
             {
-                if (p.getCurrentResource() != null)
+                if (pipe.getCurrentResource() != null)
                 {
-                    p.clearResource();
-                    gc.updatePipeVisual(p);
+                    pipe.clearResource();
+                    gameController.updatePipeVisual(pipe);
                 }
             }
             updateVisualState();
@@ -581,12 +779,12 @@ public final class SinkNode extends GameNode
         }
 
         final List<Pipe> pipesToProcess;
-        pipesToProcess = new ArrayList<>(incomingPipes);
+        pipesToProcess = new ArrayList<>(getIncomingPipes());
 
-        for (final Pipe p : pipesToProcess)
+        for (final Pipe pipe : pipesToProcess)
         {
             final ResourceType resource;
-            resource = p.getCurrentResource();
+            resource = pipe.getCurrentResource();
 
             if (resource != null)
             {
@@ -594,8 +792,8 @@ public final class SinkNode extends GameNode
                     currentDemand.get(resource) > DEFAULT_VALUE)
                 {
                     errorTickCounter = DEFAULT_VALUE;
-                    p.clearResource();
-                    gc.updatePipeVisual(p);
+                    pipe.clearResource();
+                    gameController.updatePipeVisual(pipe);
 
                     currentDemand.compute(resource, (key, c) -> {
                         if (c == null || c <= RESOURCE_DECREMENT_THRESHOLD)
@@ -612,12 +810,12 @@ public final class SinkNode extends GameNode
                 {
                     errorTickCounter++;
                     updateFill();
-                    gc.updatePipeVisual(p);
+                    gameController.updatePipeVisual(pipe);
 
                     if (errorTickCounter >= ERROR_TICK_THRESHOLD)
                     {
-                        isInErrorState = true;
-                        gc.stopSimulation("Sink Error (" + id + ")! Reset pipes (R).");
+                        errorState = true;
+                        gameController.stopSimulation("Sink Error (" + getNodeId() + ")! Reset pipes (R).");
                     }
                 }
             }

@@ -34,7 +34,8 @@ import java.util.Objects;
  * <br>
  * Here:
  * <ul>
- *   <li><code>inputList</code> is a comma-separated list of resource:quantity pairs (for example, <code>wood:3,stone:2</code>).</li>
+ *   <li><code>inputList</code> is a comma-separated list of resource:quantity pairs
+ *   (for example, <code>red:3,green:2</code>).</li>
  *   <li><code>output</code> is the resource produced after processing.</li>
  * </ul>
  * Optionally, the configuration may include a token:
@@ -77,7 +78,7 @@ import java.util.Objects;
  * @see ProcessorNode
  * @see SinkNode
  *
- * @author Braeden
+ * @author Braeden Duval
  * @version 1.0
  */
 
@@ -91,96 +92,124 @@ public final class NodeFactory
     private static final String CONFIG_KEY_RECIPE       = "RECIPE";
     private static final String CONFIG_KEY_DEMAND       = "DEMAND";
     private static final String CONFIG_KEY_DELAY        = "DELAY";
+
     private static final int    DEFAULT_PROCESSOR_DELAY = 1;
     private static final int    PARSE_INDEX_ZERO        = 0;
     private static final int    PARSE_INDEX_ONE         = 1;
     private static final int    PARSE_INDEX_TWO         = 2;
+    private static final int    MIN_DELAY_TICKS_SEC     = 1;
+    private static final int    MIN_DEMANDS             = 1;
+
+    private static final double DEFAULT_PRODUCTION_INTERVAL_SECONDS  = 1.0;
 
     /**
-     * Creates a new {@link GameNode} instance from the provided {@link LevelManager.NodeDefinition}.
+     * Creates a new {@link GameNode} from the specified nodeDefinition.
      * <p>
-     * This method examines the {@code type} field of the given definition and, based on its value
-     * ({@code SOURCE}, {@code PROCESSOR}, or {@code SINK}), delegates to one of the parsing methods:
+     * The {@link LevelManager.NodeDefinition} provides:
      * <ul>
-     *   <li>{@link #parseSourceConfig(LevelManager.NodeDefinition)} for {@code SOURCE}</li>
-     *   <li>{@link #parseProcessorConfig(LevelManager.NodeDefinition)} for {@code PROCESSOR}</li>
-     *   <li>{@link #parseSinkConfig(LevelManager.NodeDefinition)} for {@code SINK}</li>
+     *   <li>A {@code nodeId}, unique across the level.</li>
+     *   <li>Coordinates ({@code x}, {@code y}) for node placement.</li>
+     *   <li>A {@code nodeType} indicating which node subclass to create:
+     *       {@code SOURCE}, {@code PROCESSOR}, or {@code SINK}.</li>
+     *   <li>An optional configuration string, containing tokens
+     *       like {@code PRODUCES=...}, {@code RECIPE=...}, or
+     *       {@code DEMAND=...} depending on the node type.</li>
      * </ul>
-     * If the node type is unrecognized or if any exception arises during instantiation
-     * (e.g., invalid configuration data), this method wraps the error in a {@code RuntimeException}
-     * and includes the node's ID in the exception message for easier debugging.
+     * Based on the {@code type} value, this method:
+     * <ol>
+     *   <li>Converts the type to uppercase.</li>
+     *   <li>Uses a {@code switch} to delegate to the matching parser:
+     *     <ul>
+     *       <li>{@link #parseSourceConfig(LevelManager.NodeDefinition)}
+     *           if type is {@code SOURCE}</li>
+     *       <li>{@link #parseProcessorConfig(LevelManager.NodeDefinition)}
+     *           if type is {@code PROCESSOR}</li>
+     *       <li>{@link #parseSinkConfig(LevelManager.NodeDefinition)}
+     *           if type is {@code SINK}</li>
+     *     </ul>
+     *   </li>
+     *   <li>If none of the recognized types match, throws an
+     *       {@link IllegalArgumentException}.</li>
+     *   <li>Catches any parsing errors, wraps them in a
+     *       {@link RuntimeException}, and includes the node's ID
+     *       for debugging.</li>
+     * </ol>
      * </p>
      *
-     * @param definition the node definition containing type, id, coordinates, and optional config
-     * @return a new {@link GameNode} (concretely either {@link SourceNode},
-     * {@link ProcessorNode}, or {@link SinkNode})
+     * @param nodeDefinition the node nodeDefinition with type, id, coordinates,
+     *                   and configuration tokens
+     * @return a newly created {@link GameNode} subclass instance
      *
-     * @throws NullPointerException if {@code definition} is {@code null}
-     * @throws RuntimeException     if node creation fails or the node type is unrecognized
+     * @throws NullPointerException if {@code nodeDefinition} is null
+     * @throws RuntimeException if an error occurs while parsing or
+     *                          if the node type is unrecognized
+     *
      */
-    public static GameNode createNode(final LevelManager.NodeDefinition definition)
+    public static GameNode createNode(final LevelManager.NodeDefinition nodeDefinition)
     {
-        Objects.requireNonNull(definition);
+        Objects.requireNonNull(nodeDefinition);
 
         final String typeUpper;
-        typeUpper = definition.getType().toUpperCase();
+        typeUpper = nodeDefinition.getNodeType().toUpperCase();
 
         final GameNode node;
         try
         {
             node = switch (typeUpper)
             {
-                case NODE_TYPE_SOURCE       -> parseSourceConfig(definition);
-                case NODE_TYPE_PROCESSOR    -> parseProcessorConfig(definition);
-                case NODE_TYPE_SINK         -> parseSinkConfig(definition);
+                case NODE_TYPE_SOURCE       -> parseSourceConfig(nodeDefinition);
+                case NODE_TYPE_PROCESSOR    -> parseProcessorConfig(nodeDefinition);
+                case NODE_TYPE_SINK         -> parseSinkConfig(nodeDefinition);
                 default -> throw new IllegalArgumentException("Unknown type: " +
-                                                              definition.getType());
+                                                              nodeDefinition.getNodeType());
             };
         }
         catch (final Exception e)
         {
             throw new RuntimeException(
-                    "Factory Error node " + definition.getId() + ": " + e.getMessage(), e
+                    "Factory Error node " + nodeDefinition.getNodeId() + ": " + e.getMessage(), e
             );
         }
         return node;
     }
 
     /*
-     * Parses a LevelManager.NodeDefinition that represents a Source node, extracting
-     * the resource type to be produced and applying a default production interval if none
-     * is specified.
+     * Parses a LevelManager.NodeDefinition for a Source node.
      *
-     * The configuration for a Source node is expected to include a token in the format
-     * PRODUCES=<resourceName>. This method looks for that token within
-     * the node's configuration string and attempts to resolve the resource name
-     * to a ResourceType. If it fails to find or parse a valid resource type,
-     * an IllegalArgumentException is thrown.
+     * Steps:
+     * 1. Retrieve the configuration string via nodeDefinition.getConfig().
+     * 2. Check that the config is not null or blank and contains "PRODUCES=" (uppercase).
+     * 3. Split the config string by whitespace and look for a token starting with "PRODUCES=".
+     * 4. From the matching token, extract the resource type string (substring after "PRODUCES=").
+     * 5. Convert the resource string to a ResourceType using ResourceType.getResourceType.
+     * 6. If no valid resource type is found, throw an IllegalArgumentException.
+     * 7. Use the found ResourceType and a default production interval (DEFAULT_PRODUCTION_INTERVAL_SECONDS)
+     *    to create and return a new SourceNode with the node id and coordinates from nodeDefinition.
      *
+     * @param nodeDefinition the node definition for the Source node
      *
-     * @param def the node definition containing id, coordinates, and configuration string
-     * @return a newly constructed SourceNode initialized with the identified resource type
+     * @return a new SourceNode configured with the identified resource type
      *
-     * @throws IllegalArgumentException if the configuration is missing the PRODUCES= token,
-     * or if the resource type is invalid
+     * @throws IllegalArgumentException if the configuration is missing PRODUCES= or if the resource type is invalid
+     *
      */
-    private static SourceNode parseSourceConfig(final LevelManager.NodeDefinition def)
+    private static SourceNode parseSourceConfig(final LevelManager.NodeDefinition nodeDefinition)
     {
         final String config;
-        config = def.getConfig();
+        config = nodeDefinition.getConfiguration();
 
         if (config == null
                 || config.isBlank()
                 || !config.toUpperCase().contains(CONFIG_KEY_PRODUCES + "="))
         {
             throw new IllegalArgumentException("Missing PRODUCES= for Source: " +
-                                               def.getId());
+                                               nodeDefinition.getNodeId());
         }
 
         final double interval;
-        interval = SourceNode.DEFAULT_PRODUCTION_INTERVAL_SECONDS;
+        interval = DEFAULT_PRODUCTION_INTERVAL_SECONDS;
 
-        ResourceType type = null;
+        ResourceType resourceType = null;
 
         for (final String configToken : config.trim().split("\\s+"))
         {
@@ -193,61 +222,71 @@ public final class NodeFactory
                 resourceString = configToken.substring(CONFIG_KEY_PRODUCES.length() +
                                                        PARSE_INDEX_ONE);
 
-                type = ResourceType.getResourceType(resourceString);
+                resourceType = ResourceType.getResourceType(resourceString);
 
-                if (type == null)
+                if (resourceType == null)
                 {
                     throw new IllegalArgumentException(
-                            "Bad type '" + resourceString + "' Source: " + def.getId()
+                            "Bad resourceType '" + resourceString + "' Source: " + nodeDefinition.getNodeId()
                     );
                 }
             }
         }
-        if (type == null)
+        if (resourceType == null)
         {
             throw new IllegalArgumentException("Missing PRODUCES key for Source: " +
-                                               def.getId());
+                                               nodeDefinition.getNodeId());
         }
 
         final SourceNode sourceNode;
-        sourceNode = new SourceNode(def.getId(), def.getX(), def.getY(), type, interval);
+        sourceNode = new SourceNode(nodeDefinition.getNodeId(),
+                                    nodeDefinition.getXCoordinate(),
+                                    nodeDefinition.getYCoordinate(),
+                                    resourceType,
+                                    interval);
 
         return sourceNode;
     }
 
     /*
-     * Parses a LevelManager.NodeDefinition that represents a Processor node, extracting
-     * the input recipe map, output resource type, and optional processing delay.
+     * Parses a LevelManager.NodeDefinition for a Processor node.
      *
-     * The configuration must include a token in the format RECIPE=<inputs>-><output>,
-     * where <inputs> is a comma-separated list of resource:quantity, and
-     * <output> is a single resource type optionally followed by a quantity. If a
-     * DELAY=<value> token is found, it overrides the default processing delay.
+     * Steps:
+     * 1. Retrieve the configuration string via nodeDefinition.getConfig() and verify that it contains "RECIPE=".
+     * 2. Initialize an empty map for input resources (recipeIn), a variable for output ResourceType (typeOut),
+     *    and set delay to DEFAULT_PROCESSOR_DELAY.
+     * 3. Split the config by whitespace and process each token.
+     * 4. For a token starting with "RECIPE=":
+     *    a. Extract the recipe portion (substring after "RECIPE=").
+     *    b. Split the recipe string on "->" to separate inputs from the output.
+     *    c. Validate that both input and output parts exist and are non-blank.
+     *    d. Split the input part by commas to obtain individual resource:quantity pairs.
+     *    e. For each pair, split by ":" to separate resource type and quantity.
+     *    f. Convert the resource name using ResourceType.getResourceType and parse the quantity as an integer.
+     *    g. If any resource is invalid or quantity is non-positive, throw an IllegalArgumentException.
+     * 5. For tokens starting with "DELAY=", extract and parse the delay value,
+     *    ensuring it is at least MIN_DELAY_TICKS_SEC.
+     * 6. After processing all tokens, if no valid recipe is found, throw an exception.
+     * 7. Create and return a new ProcessorNode with the parsed id, coordinates, delay, input recipe, and output type.
      *
+     * @param nodeDefinition the node definition for the Processor node
      *
-     * This method populates the recipe map with all valid resource:quantity pairs,
-     * then creates a ProcessorNode with the parsed data. If any part of the recipe
-     * is missing or malformed (e.g., unknown resource, non-positive quantity), an
-     * IllegalArgumentException is thrown.
+     * @return a new ProcessorNode configured with the parsed recipe and output resource
      *
+     * @throws IllegalArgumentException if RECIPE= is missing or if any value in the recipe or delay is invalid
      *
-     * @param def the node definition containing id, coordinates, and configuration string
-     * @return a newly constructed ProcessorNode with the parsed recipe and output resource
-     *
-     * @throws IllegalArgumentException if the configuration does not contain a valid RECIPE=...
-     * token or if numeric values within the recipe or delay are invalid
      */
-    private static ProcessorNode parseProcessorConfig(final LevelManager.NodeDefinition def)
+    private static ProcessorNode parseProcessorConfig(final LevelManager.NodeDefinition nodeDefinition)
     {
-        final String config;
-        config = def.getConfig();
+        final String configuration;
+        configuration = nodeDefinition.getConfiguration();
 
-        if (config == null
-                || config.isBlank()
-                || !config.toUpperCase().contains(CONFIG_KEY_RECIPE + "="))
+        if (configuration == null ||
+            configuration.isBlank() ||
+            !configuration.toUpperCase().contains(CONFIG_KEY_RECIPE + "="))
         {
             throw new IllegalArgumentException("Missing RECIPE= for Processor: " +
-                                               def.getId());
+                                               nodeDefinition.getNodeId());
         }
 
         final Map<ResourceType, Integer> recipeIn;
@@ -255,10 +294,10 @@ public final class NodeFactory
 
         ResourceType typeOut = null;
 
-        int delay;
-        delay = DEFAULT_PROCESSOR_DELAY;
+        int processorDelay;
+        processorDelay = DEFAULT_PROCESSOR_DELAY;
 
-        for (final String configToken : config.trim().split("\\s+"))
+        for (final String configToken : configuration.trim().split("\\s+"))
         {
             final String upperToken;
             upperToken = configToken.toUpperCase();
@@ -285,13 +324,14 @@ public final class NodeFactory
                 if (inputTokens.length == PARSE_INDEX_ZERO ||
                     inputTokens[PARSE_INDEX_ZERO].isBlank())
                 {
-                    throw new IllegalArgumentException("Need inputs:" + def.getId());
+                    throw new IllegalArgumentException("Need inputs:" + nodeDefinition.getNodeId());
                 }
 
                 for (final String inputDef : inputTokens)
                 {
                     final String[] tc;
                     tc = inputDef.trim().split(":");
+
                     if (tc.length != PARSE_INDEX_TWO ||
                         tc[PARSE_INDEX_ZERO].isBlank() ||
                         tc[PARSE_INDEX_ONE].isBlank())
@@ -306,6 +346,7 @@ public final class NodeFactory
                     {
                         final int quantity;
                         quantity = Integer.parseInt(tc[PARSE_INDEX_ONE]);
+
                         if (resourceType == null || quantity <= PARSE_INDEX_ZERO)
                         {
                             throw new IllegalArgumentException("Bad T/C:" + inputDef);
@@ -344,27 +385,27 @@ public final class NodeFactory
                                                        CONFIG_KEY_DELAY.length() +
                                                         PARSE_INDEX_ONE));
 
-                    delay   = Math.max(ProcessorNode.MIN_DELAY_TICKS, parseDelay);
+                    processorDelay   = Math.max(MIN_DELAY_TICKS_SEC, parseDelay);
                 }
                 catch (final NumberFormatException e)
                 {
-                    System.err.println("Warn: Bad Proc DELAY '" +
-                                       configToken +
-                                       "' id=" +
-                                       def.getId());
+                    throw new IllegalArgumentException("Warn: Bad Proc DELAY '" +
+                                                        configToken +
+                                                        "' id=" +
+                                                        nodeDefinition.getNodeId());
                 }
             }
         }
         if (recipeIn.isEmpty())
         {
-            throw new IllegalArgumentException("Bad RECIPE parse:" + def.getId());
+            throw new IllegalArgumentException("Bad RECIPE parse:" + nodeDefinition.getNodeId());
         }
 
         final ProcessorNode processorNode;
-        processorNode = new ProcessorNode(def.getId(),
-                                          def.getX(),
-                                          def.getY(),
-                                          delay,
+        processorNode = new ProcessorNode(nodeDefinition.getNodeId(),
+                                          nodeDefinition.getXCoordinate(),
+                                          nodeDefinition.getYCoordinate(),
+                                          processorDelay,
                                           recipeIn,
                                           typeOut);
 
@@ -372,49 +413,52 @@ public final class NodeFactory
     }
 
     /*
-     * Parses a LevelManager.NodeDefinition that represents a Sink node, extracting
-     * the demand map for required resources.
+     * Parses a LevelManager.NodeDefinition for a Sink node.
      *
-     * The configuration for a Sink node is expected to start with the token
-     * DEMAND=<resource:quantity>,<resource:quantity>,.... Each pair is split
-     * to determine the resource type and the required amount. If any resource type is
-     * unknown or any quantity is non-positive, an IllegalArgumentException is thrown.
+     * Steps:
+     * 1. Retrieve the configuration string and ensure it is not null or blank and starts with "DEMAND=".
+     * 2. Extract the substring following "DEMAND=" to obtain the demand specification.
+     * 3. Split the extracted string by commas to separate multiple resource demands.
+     * 4. For each demand string:
+     *    a. Split by ":" to separate the resource name and required quantity.
+     *    b. Convert the resource name to a ResourceType.
+     *    c. Parse the quantity as an integer and ensure it is at least 1.
+     *    d. Insert the resource and quantity into a demand map.
+     * 5. If no valid demands are found, throw an IllegalArgumentException.
+     * 6. Create and return a new SinkNode with the node id, coordinates, and the demand map.
      *
+     * @param nodeDefinition the node definition for the Sink node
      *
-     * A valid configuration results in creating a SinkNode that tracks
-     * how many of each demanded resource must be received before it is considered satisfied.
+     * @return a new SinkNode configured with the parsed resource demands
      *
+     * @throws IllegalArgumentException if the configuration is missing DEMAND=,
+     *                                  is empty, or contains invalid demand data
      *
-     * @param def the node definition containing id, coordinates, and configuration string
-     * @return a newly constructed SinkNode populated with the parsed demands
-     *
-     * @throws IllegalArgumentException if the configuration is missing the DEMAND= token,
-     * if it is empty, or if any resource demand is invalid
      */
-    private static SinkNode parseSinkConfig(final LevelManager.NodeDefinition def)
+    private static SinkNode parseSinkConfig(final LevelManager.NodeDefinition nodeDefinition)
     {
-        final String config;
-        config = def.getConfig();
+        final String configuration;
+        configuration = nodeDefinition.getConfiguration();
 
-        if (config == null
-                || config.isBlank()
-                || !config.toUpperCase().startsWith(CONFIG_KEY_DEMAND + "="))
+        if (configuration == null ||
+            configuration.isBlank() ||
+            !configuration.toUpperCase().startsWith(CONFIG_KEY_DEMAND + "="))
         {
             throw new IllegalArgumentException("Missing DEMAND= for Sink: " +
-                                               def.getId());
+                                               nodeDefinition.getNodeId());
         }
 
         final Map<ResourceType, Integer> demandMap;
         demandMap = new HashMap<>();
 
         final String demandString;
-        demandString = def.getConfig().substring(CONFIG_KEY_DEMAND.length() +
+        demandString = nodeDefinition.getConfiguration().substring(CONFIG_KEY_DEMAND.length() +
                                                  PARSE_INDEX_ONE ).trim();
 
         if (demandString.isEmpty())
         {
             throw new IllegalArgumentException("Empty DEMAND:" +
-                                               def.getId());
+                                               nodeDefinition.getNodeId());
         }
 
         final String[] demands;
@@ -441,7 +485,7 @@ public final class NodeFactory
                 requiredCount = Integer.parseInt(typeCountPair[PARSE_INDEX_ONE]);
 
                 final int MIN_REQUIRED;
-                MIN_REQUIRED = 1;
+                MIN_REQUIRED = MIN_DEMANDS;
 
                 if (resourceType == null || requiredCount < MIN_REQUIRED)
                 {
@@ -458,13 +502,13 @@ public final class NodeFactory
         if (demandMap.isEmpty())
         {
             throw new IllegalArgumentException("No valid demands parsed:" +
-                                               def.getId());
+                                               nodeDefinition.getNodeId());
         }
 
         final SinkNode sinkNode;
-        sinkNode = new SinkNode(def.getId(),
-                                def.getX(),
-                                def.getY(),
+        sinkNode = new SinkNode(nodeDefinition.getNodeId(),
+                                nodeDefinition.getXCoordinate(),
+                                nodeDefinition.getYCoordinate(),
                                 demandMap);
 
         return sinkNode;

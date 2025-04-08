@@ -68,9 +68,15 @@ public enum ResourceType
     private final Color displayColor;
 
     /**
-     * Constructs a ResourceType with the specified style class and display color.
+     * Constructs a ResourceType with the specified display color.
+     * <p>
+     * Each enum constant is created by passing a {@link javafx.scene.paint.Color} that
+     * represents the visual appearance of the resource. This color is stored and later
+     * returned by the {@link #getDisplayColor()} method.
+     * </p>
      *
-     * @param displayColor the JavaFX Color that visually represents this resource type in the game UI.
+     * @param displayColor the JavaFX Color that represents this resource; must not be null.
+     * @throws IllegalArgumentException if {@code displayColor} is null.
      */
     ResourceType(final Color displayColor)
     {
@@ -82,7 +88,11 @@ public enum ResourceType
     /*
      * Validates that the given display color is not null.
      *
-     * @param displayColor the color to validate
+     * If the passed color is null, an IllegalArgumentException is thrown with a descriptive message.
+     *
+     *
+     * @param displayColor the color to validate.
+     * @throws IllegalArgumentException if displayColor is null.
      */
     private static void validateDisplayColor(final Color displayColor)
     {
@@ -111,22 +121,25 @@ public enum ResourceType
             return null;
         try
         {
-            final ResourceType type;
-            type = ResourceType.valueOf(text.trim().toUpperCase());
+            final ResourceType resourceType;
+            resourceType = ResourceType.valueOf(text.trim().toUpperCase());
 
-            return type;
+            return resourceType;
         }
         catch (final IllegalArgumentException e)
         {
-            System.err.println("Warning: Unknown ResourceType string: " + text);
             return null;
         }
     }
 
     /**
-     * Retrieves the display color associated with this resource type.
+     * Returns the JavaFX Color associated with this resource type.
+     * <p>
+     * This display color is used throughout the game to visually represent the resource,
+     * whether in UI components, CSS styling, or graphical elements.
+     * </p>
      *
-     * @return the JavaFX Color used for displaying this resource.
+     * @return the display color for this resource.
      */
     public Color getDisplayColor()
     {

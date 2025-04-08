@@ -47,20 +47,24 @@ public final class Pipe
     private static final String PIPE_GLOW_CSS       = "pipe-glow";
     private static final String PIPE_RESOURCE_CSS   = "pipe-resource";
 
-    public static final String BASE_STYLE_CLASS     = "pipe";
-    public static final String PIPE_ID_PREFIX       = "pipe-";
-    public static final double PARTICLE_RADIUS      = 6.0;
-    public static final double PARTICLE_DURATION    = 1.0;
-    public static final int    ONE_CYCLE            = 1;
+    private static final String BASE_STYLE_CLASS     = "pipe";
+    private static final String PIPE_ID_PREFIX       = "pipe-";
+    private static final double PARTICLE_RADIUS      = 6.0;
+    private static final double PARTICLE_DURATION    = 1.0;
+    private static final int    ONE_CYCLE            = 1;
 
     private final GameNode      startNode;
     private final GameNode      endNode;
-    private final List<Circle>  activeParticles      = new ArrayList<>();
+    private final List<Circle>  activeParticles;
 
     private ResourceType    currentResource;
-    private boolean         busyThisTick;
-    private boolean         stateChangedThisTick;
     private Line            lineVisual;
+    private boolean         tick;
+    private boolean         state;
+
+    {
+        activeParticles = new ArrayList<>();
+    }
 
     /**
      * Constructs a new {@code Pipe} connecting the specified start and end {@link GameNode}s.
@@ -76,6 +80,7 @@ public final class Pipe
      *
      * @throws NullPointerException     if either {@code startNode} or {@code endNode} is {@code null}
      * @throws IllegalArgumentException if the connection between {@code startNode} and {@code endNode} is invalid
+     *
      */
     public Pipe(final GameNode startNode,
                 final GameNode endNode)
@@ -94,7 +99,9 @@ public final class Pipe
      *
      * @param startNode the node from which the pipe originates
      * @param endNode   the node where the pipe terminates
+     *
      * @throws NullPointerException if startNode or endNode is null
+     *
      */
     private static void validateNodesNotNull(final GameNode startNode,
                                              final GameNode endNode)
@@ -115,6 +122,7 @@ public final class Pipe
      * @param endNode   the node where the pipe terminates
      *
      * @throws IllegalArgumentException if the connection is invalid according to the game logic
+     *
      */
     private static void validateConnection(final GameNode startNode,
                                            final GameNode endNode)
@@ -133,7 +141,9 @@ public final class Pipe
      *
      * @param start the starting GameNode
      * @param end   the ending GameNode
+     *
      * @return true if the connection is valid; false otherwise
+     *
      */
     private static boolean isValidConnection(final GameNode start,
                                              final GameNode end)
@@ -142,15 +152,25 @@ public final class Pipe
         final boolean validEnd;
         final boolean validConnection;
 
-        validStart       = (start instanceof SourceNode || start instanceof ProcessorNode);
-        validEnd         = (end   instanceof ProcessorNode || end   instanceof SinkNode);
+        validStart       = (start instanceof SourceNode     || start instanceof ProcessorNode);
+        validEnd         = (end   instanceof ProcessorNode  || end   instanceof SinkNode);
         validConnection  = validStart && validEnd;
 
         return validConnection;
     }
 
     /*
-     * Animates a particle along the pipe to represent resource flow.
+     * If lineVisual or currentResource is null, the method returns immediately.
+     *
+     * Otherwise, it creates a new Circle (particle), sets its radius (PARTICLE_RADIUS)
+     * and fill color (from currentResource), and adds it to activeParticles.
+     *
+     * It then retrieves a PathTransition (configured by getPathTransition) for that particle.
+     *
+     * If the parent of lineVisual is a Pane, the particle is added to the Pane.
+     *
+     * Finally, the animation is started.
+     *
      */
     private void animateResourceFlow()
     {
@@ -182,10 +202,19 @@ public final class Pipe
     }
 
     /*
-     * Configures and returns a PathTransition for the given particle.
+     * Creates a new PathTransition.
      *
-     * @param particle the Circle to animate along the pipe
-     * @return the configured PathTransition
+     * Sets its duration to PARTICLE_DURATION seconds.
+     *
+     * Uses lineVisual as the path and the given particle as the node to animate.
+     *
+     * Sets the cycle count to ONE_CYCLE.
+     *
+     * Determines the parent of lineVisual (if available), and registers an onFinished handler
+     * to remove the particle from its parent Pane and from activeParticles.
+     *
+     * Returns the configured PathTransition.
+     *
      */
     private PathTransition getPathTransition(final Circle particle)
     {
@@ -220,8 +249,15 @@ public final class Pipe
         return path;
     }
 
-    /*
-     * Updates the visual state of the pipe by setting its style classes.
+    /**
+     * Updates the visual state of the pipe by adjusting its style classes.
+     *
+     * <p>
+     * This method ensures that the base style class is applied to the line visual.
+     * It removes any existing glow or resource-specific classes and, if the pipe is not empty,
+     * adds a glow class. Finally, it always adds the resource-specific class.
+     * </p>
+     *
      */
     public void updateVisualState()
     {
@@ -245,36 +281,54 @@ public final class Pipe
 
     /**
      * Resets the pipe's state.
+     *
+     * <p>
+     * This method clears the current resource and resets the busy flags (tick and state)
+     * so that the pipe is ready for a new simulation tick or restart.
+     * </p>
+     *
      */
     public void resetState()
     {
         currentResource         = null;
-        busyThisTick            = false;
-        stateChangedThisTick    = false;
+        tick                    = false;
+        state = false;
     }
 
     /**
-     * Attempts to set the given resource on this pipe.
+     * Attempts to assign the specified resource to this pipe.
      *
-     * @param type the ResourceType to set
-     * @return true if the resource was set successfully; false otherwise
+     * <p>
+     * The method verifies that the pipe is not already busy or carrying a resource.
+     * If it is available, it sets currentResource to the given resource, marks the pipe as busy,
+     * triggers the resource flow animation, and returns true. Otherwise, it returns false.
+     * </p>
+     *
+     * @param type the ResourceType to set on this pipe
+     *
+     * @return true if the resource was successfully assigned; false otherwise
+     *
      */
     public boolean trySetResource(final ResourceType type)
     {
-        if (busyThisTick || currentResource != null)
+        if (tick || currentResource != null)
         {
             return false;
         }
         currentResource = type;
-        busyThisTick = true;
-        stateChangedThisTick = true;
+        tick = true;
+        state = true;
         animateResourceFlow();
 
         return true;
     }
 
     /**
-     * Clears the current resource from this pipe.
+     * Clears the current resource from the pipe.
+     *
+     * <p>
+     * Sets the internal currentResource field to null, effectively emptying the pipe.
+     * </p>
      */
     public void clearResource()
     {
@@ -282,29 +336,47 @@ public final class Pipe
     }
 
     /**
-     * Checks whether this pipe is empty.
+     * Checks if the pipe is empty.
      *
-     * @return true if there is no resource set; false otherwise
+     * <p>
+     * Returns true if no resource is currently assigned.
+     * </p>
+     *
+     * @return true if currentResource is null, false otherwise
+     *
      */
     public boolean isEmpty()
     {
-        return currentResource == null;
+        final boolean empty;
+        empty = (currentResource == null);
+        return empty;
     }
 
     /**
-     * Indicates whether this pipe is busy during the current tick.
+     * Indicates whether the pipe is busy for the current simulation tick.
      *
-     * @return true if busy; false otherwise
+     * <p>
+     * The busy state is determined by the tick flag.
+     * </p>
+     *
+     * @return true if the pipe is busy (not available), false otherwise
+     *
      */
     public boolean isBusyThisTick()
     {
-        return busyThisTick;
+        return !tick;
     }
 
     /**
-     * Sets the curve visual for this pipe.
+     * Sets the line visual for the pipe and updates its visual state.
      *
-     * @param line the Line representing the pipe's visual
+     * <p>
+     * The provided Line is stored as the pipe's visual element, and updateVisualState()
+     * is invoked to adjust style classes accordingly.
+     * </p>
+     *
+     * @param line the Line object representing the pipe's visual
+     *
      */
     public void setLineVisual(final Line line)
     {
@@ -313,9 +385,14 @@ public final class Pipe
     }
 
     /**
-     * Returns the start node.
+     * Returns the GameNode from which the pipe originates.
      *
-     * @return the starting GameNode
+     * <p>
+     * This node provides the starting point for resource flow along the pipe.
+     * </p>
+     *
+     * @return the start GameNode
+     *
      */
     public GameNode getStartNode()
     {
@@ -323,9 +400,14 @@ public final class Pipe
     }
 
     /**
-     * Returns the end node.
+     * Returns the GameNode at which the pipe terminates.
      *
-     * @return the ending GameNode
+     * <p>
+     * This node is the destination for resources transported along the pipe.
+     * </p>
+     *
+     * @return the end GameNode
+     *
      */
     public GameNode getEndNode()
     {
@@ -334,16 +416,26 @@ public final class Pipe
 
     /**
      * Resets the busy flag for the current simulation tick.
+     *
+     * <p>
+     * Sets the internal tick flag to false, allowing the pipe to accept a new resource next tick.
+     * </p>
+     *
      */
     public void resetTickStatus()
     {
-        busyThisTick = false;
+        tick = false;
     }
 
     /**
-     * Returns the line visual.
+     * Returns the current line visual representing the pipe.
      *
-     * @return the line visual object
+     * <p>
+     * Typically, this is the Line object that is part of the JavaFX scene graph.
+     * </p>
+     *
+     * @return the line visual, or null if not set
+     *
      */
     public Object getLineVisual()
     {
@@ -351,9 +443,14 @@ public final class Pipe
     }
 
     /**
-     * Returns the current resource on the pipe.
+     * Returns the current resource assigned to this pipe.
      *
-     * @return the ResourceType, or null if none is set
+     * <p>
+     * If no resource is set, returns null.
+     * </p>
+     *
+     * @return the current ResourceType, or null if the pipe is empty
+     *
      */
     public ResourceType getCurrentResource()
     {
@@ -361,7 +458,14 @@ public final class Pipe
     }
 
     /**
-     * Removes all active particle animations from this pipe.
+     * Removes all active particle animations from the pipe.
+     *
+     * <p>
+     * The method creates a copy of the active particle list, iterates over each Circle,
+     * and if its parent is a Pane, removes the Circle from the Pane.
+     * Finally, it clears the list of active particles.
+     * </p>
+     *
      */
     public void removeAllParticles()
     {
@@ -384,9 +488,15 @@ public final class Pipe
     }
 
     /**
-     * Returns a string representation of this Pipe.
+     * Returns a string representation of the pipe.
      *
-     * @return a string in the format "Pipe[startNodeId->endNodeId, R:resourceName]"
+     * <p>
+     * The format is "Pipe[startNodeId->endNodeId, R:resourceName]". If no resource is set,
+     * an underscore is used in place of the resource name.
+     * </p>
+     *
+     * @return a formatted String representing this pipe.
+     *
      */
     @Override
     public String toString()
@@ -404,40 +514,45 @@ public final class Pipe
 
         final String result;
         result = String.format("Pipe[%s->%s, R:%s]",
-                               startNode.getId(),
-                               endNode.getId(),
+                               startNode.getNodeId(),
+                               endNode.getNodeId(),
                                resourceStr);
         return result;
     }
 
     /**
-     * Indicates whether some other object is "equal to" this one.
-     * Two Pipe objects are considered equal if their start node IDs and end node IDs are equal.
+     * Determines whether this pipe is equal to another object.
      *
-     * @param o the reference object with which to compare
-     * @return {@code true} if this object is the same as the obj argument; {@code false} otherwise.
+     * <p>
+     * Two Pipe instances are considered equal if they have the same start and end node IDs.
+     * </p>
+     *
+     * @param object the object to compare with
+     *
+     * @return true if both pipes have identical start and end node IDs; false otherwise
+     *
      */
     @Override
-    public boolean equals(final Object o)
+    public boolean equals(final Object object)
     {
-        if (this == o)
+        if (this == object)
         {
             return true;
         }
 
-        if (!(o instanceof Pipe))
+        if (!(object instanceof Pipe))
         {
             return false;
         }
 
         final Pipe other;
-        other = (Pipe) o;
+        other = (Pipe) object;
 
         final boolean equalsStart;
-        equalsStart = startNode.getId().equals(other.startNode.getId());
+        equalsStart = startNode.getNodeId().equals(other.startNode.getNodeId());
 
         final boolean equalsEnd;
-        equalsEnd = endNode.getId().equals(other.endNode.getId());
+        equalsEnd = endNode.getNodeId().equals(other.endNode.getNodeId());
 
         final boolean result;
         result = equalsStart && equalsEnd;
@@ -446,17 +561,51 @@ public final class Pipe
     }
 
     /**
-     * Returns a hash code value for the object.
-     * The hash code is computed based on the IDs of the start and end nodes.
+     * Returns a hash code value for the pipe.
      *
-     * @return a hash code value for this object.
+     * <p>
+     * The hash code is calculated solely based on the IDs of the start and end nodes.
+     * </p>
+     *
+     * @return an integer hash code for this pipe.
+     *
      */
     @Override
     public int hashCode()
     {
         final int result;
-        result = Objects.hash(startNode.getId(), endNode.getId());
+        result = Objects.hash(startNode.getNodeId(), endNode.getNodeId());
 
         return result;
+    }
+
+    /**
+     * Returns the base style class used for all pipes.
+     *
+     * <p>
+     * This public static method provides controlled access to the internal constant.
+     * </p>
+     *
+     * @return the base style class string.
+     *
+     */
+    public static String getPipeStyle()
+    {
+        return BASE_STYLE_CLASS;
+    }
+
+    /**
+     * Returns the pipe ID prefix.
+     *
+     * <p>
+     * This static method exposes the prefix used to generate unique identifiers for pipe visuals.
+     * </p>
+     *
+     * @return the pipe ID prefix string.
+     *
+     */
+    public static String getPipeIdPrefix()
+    {
+        return PIPE_ID_PREFIX;
     }
 }

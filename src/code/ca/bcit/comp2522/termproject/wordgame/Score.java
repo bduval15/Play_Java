@@ -16,10 +16,12 @@ import java.util.List;
  * <p>
  * This class provides methods to:
  * <ul>
- *   <li>Calculate the total score for the session (with first-attempt correct answers worth 2 points and second-attempt correct answers worth 1 point).</li>
+ *   <li>Calculate the total score for the session (with first-attempt correct answers worth 2 points and
+ *   second-attempt correct answers worth 1 point).</li>
  *   <li>Compute the average score per game.</li>
- *   <li>Parse a score record from a list of strings (typically read from a file) using the {@link #parseScore(List)} method.</li>
- *   <li>Convert a score record to a formatted string for saving (via {@link #toString()}.</li>
+ *   <li>Parse a score record from a list of strings (typically read from a file)
+ *   using the {@link #parseScore(List)} method.</li>
+ *   <li>Convert a score record to a formatted string for saving via {@link #toString()}.</li>
  *   <li>Append a score record to a file using the static {@link #appendScoreToFile(Score, String)} method.</li>
  *   <li>Check if the current score beats previous high scores by reading from a file and comparing averages via the
  *       {@link #checkHighScore(Score, String)} method.</li>
@@ -31,6 +33,7 @@ import java.util.List;
 
 final class Score
 {
+    private static final int DEFAULT_VALUE              = 0;
     private static final int GAMES_LINE_INDEX           = 1;
     private static final int FIRST_CORRECT_LINE_INDEX   = 2;
     private static final int SECOND_CORRECT_LINE_INDEX  = 3;
@@ -52,12 +55,20 @@ final class Score
     private final int           numIncorrectTwoAttempts;
 
     /**
-     * Constructs a Score object using the current date and time.
+     * Constructs a {@code Score} object for the current session using the current date and time.
+     * <p>
+     * The provided game statistics are validated so that none is negative using the shared
+     * {@link #validateStats(int, int, int, int)} method. If any parameter is less than {@code DEFAULT_VALUE},
+     * an {@link IllegalArgumentException} is thrown.
+     * </p>
      *
-     * @param numGamesPlayed          The number of games played.
-     * @param numCorrectFirstAttempt  The number of first-attempt correct answers.
-     * @param numCorrectSecondAttempt The number of second-attempt correct answers.
-     * @param numIncorrectTwoAttempts The number of incorrect answers after two attempts.
+     * @param numGamesPlayed          the number of games played (must be non-negative).
+     * @param numCorrectFirstAttempt  the number of correct answers on the first attempt
+     *                                (non-negative; each worth 2 points).
+     * @param numCorrectSecondAttempt the number of correct answers on the second attempt
+     *                                (non-negative; each worth 1 point).
+     * @param numIncorrectTwoAttempts the number of incorrect attempts (non-negative).
+     * @throws IllegalArgumentException if any of the statistics is negative.
      */
     Score(
             final int numGamesPlayed,
@@ -65,8 +76,10 @@ final class Score
             final int numCorrectSecondAttempt,
             final int numIncorrectTwoAttempts)
     {
-        validateStats(numGamesPlayed, numCorrectFirstAttempt,
-                      numCorrectSecondAttempt, numIncorrectTwoAttempts);
+        validateStats(numGamesPlayed,
+                      numCorrectFirstAttempt,
+                      numCorrectSecondAttempt,
+                      numIncorrectTwoAttempts);
 
         this.dateTimePlayed             = LocalDateTime.now();
         this.numGamesPlayed             = numGamesPlayed;
@@ -77,13 +90,18 @@ final class Score
     }
 
     /**
-     * Constructs a Score object with a specified date and game statistics.
+     * Constructs a {@code Score} object using a specified timestamp along with game statistics.
+     * <p>
+     * The {@code dateTimePlayed} parameter must not be {@code null}. In addition, all the numeric statistics
+     * are validated (using {@link #validateStats(int, int, int, int)}) to ensure they are not negative.
+     * </p>
      *
-     * @param dateTimePlayed          The date and time when the game was played.
-     * @param numGamesPlayed          The number of games played.
-     * @param numCorrectFirstAttempt  The number of first-attempt correct answers.
-     * @param numCorrectSecondAttempt The number of second-attempt correct answers.
-     * @param numIncorrectTwoAttempts The number of incorrect answers after two attempts.
+     * @param dateTimePlayed          the date and time when the game was played (must not be {@code null}).
+     * @param numGamesPlayed          the number of games played.
+     * @param numCorrectFirstAttempt  the number of correct answers on the first attempt.
+     * @param numCorrectSecondAttempt the number of correct answers on the second attempt.
+     * @param numIncorrectTwoAttempts the number of incorrect answers after two attempts.
+     * @throws IllegalArgumentException if {@code dateTimePlayed} is {@code null} or any statistic is negative.
      */
     Score(
             final LocalDateTime dateTimePlayed,
@@ -97,8 +115,10 @@ final class Score
             throw new IllegalArgumentException("dateTimePlayed cannot be null.");
         }
 
-        validateStats(numGamesPlayed, numCorrectFirstAttempt,
-                      numCorrectSecondAttempt, numIncorrectTwoAttempts);
+        validateStats(numGamesPlayed,
+                      numCorrectFirstAttempt,
+                      numCorrectSecondAttempt,
+                      numIncorrectTwoAttempts);
 
         this.dateTimePlayed             = dateTimePlayed;
         this.numGamesPlayed             = numGamesPlayed;
@@ -107,43 +127,65 @@ final class Score
         this.numIncorrectTwoAttempts    = numIncorrectTwoAttempts;
     }
 
-    /**
-     * Shared validation logic for numeric stats.
+    /*
+     * Validates the numeric game statistics.
      *
-     * @param numGamesPlayed          The number of games played.
-     * @param numCorrectFirstAttempt  The number of correct answers on the first try.
-     * @param numCorrectSecondAttempt The number of correct answers on the second try.
-     * @param numIncorrectTwoAttempts The number of incorrect answers after two attempts.
+     * Each parameter is checked to ensure it is not less than DEFAULT_VALUE.
+     * If any parameter is negative, this method throws an IllegalArgumentException with a descriptive message.
+     *
+     *
+     * @param numGamesPlayed          the number of games played.
+     * @param numCorrectFirstAttempt  the number of first-attempt correct answers.
+     * @param numCorrectSecondAttempt the number of second-attempt correct answers.
+     * @param numIncorrectTwoAttempts the number of incorrect answers after two attempts.
+     * @throws IllegalArgumentException if any of the parameters is less than DEFAULT_VALUE.
      */
     private static void validateStats(final int numGamesPlayed,
-            final int numCorrectFirstAttempt,
-            final int numCorrectSecondAttempt,
-            final int numIncorrectTwoAttempts)
+                                      final int numCorrectFirstAttempt,
+                                      final int numCorrectSecondAttempt,
+                                      final int numIncorrectTwoAttempts)
     {
-        if (numGamesPlayed < 0)
+        if (numGamesPlayed < DEFAULT_VALUE)
         {
             throw new IllegalArgumentException("GamesPlayed cannot be negative.");
         }
-        if (numCorrectFirstAttempt < 0)
+        if (numCorrectFirstAttempt < DEFAULT_VALUE)
         {
             throw new IllegalArgumentException("CorrectFirstAttempt cannot be negative.");
         }
-        if (numCorrectSecondAttempt < 0)
+        if (numCorrectSecondAttempt < DEFAULT_VALUE)
         {
             throw new IllegalArgumentException("CorrectSecondAttempt cannot be negative.");
         }
-        if (numIncorrectTwoAttempts < 0)
+        if (numIncorrectTwoAttempts < DEFAULT_VALUE)
         {
             throw new IllegalArgumentException("IncorrectTwoAttempts cannot be negative.");
         }
     }
 
     /*
-     * Parses a list of strings representing a score record into a Score object.
+     * Parses a list of strings into a Score object.
      *
-     * @param record A list of strings representing a single score entry.
-     * @return A Score object parsed from the given record.
-     * @throws IllegalArgumentException If the format of the score record is invalid.
+     * The provided record list is expected to contain a fixed number of lines, where:
+     *
+     *   The first line contains the date and time string prefixed by dateTimeText.
+     *   The line at index GAMES_LINE_INDEX contains the number of games played,
+     *   prefixed by gamesPlayedText.</li>
+     *   The line at index FIRST_CORRECT_LINE_INDEX contains the count of correct first attempts,
+     *   prefixed by correctFirstAttemptText.
+     *   The line at index SECOND_CORRECT_LINE_INDEX contains the count of correct second attempts,
+     *   prefixed by correctSecondAttemptText.
+     *   The line at index INCORRECT_LINE_INDEX contains the count of incorrect attempts,
+     *       prefixed by incorrectAttemptsText.
+     *
+     * The method extracts the numeric values from each line (by removing the respective prefix text),
+     * converts them to integers, and parses the date and time string using the specified formatter.
+     * If any conversion fails, an IllegalArgumentException is thrown.
+     * </p>
+     *
+     * @param record a List<String> representing the lines of a score record.
+     * @return a new Score object constructed from the parsed values.
+     * @throws IllegalArgumentException if the record does not conform to the expected format.
      */
     private static Score parseScore(final List<String> record)
     {
@@ -187,30 +229,48 @@ final class Score
 
     /**
      * Appends a score record to a file.
+     * <p>
+     * This method opens the specified file in append mode and writes the string representation
+     * of the provided {@code score} (obtained via {@link #toString()}) followed by a blank line for separation.
+     * It uses a {@code FileWriter}, {@code BufferedWriter}, and {@code PrintWriter} to perform the write operation.
+     * </p>
      *
-     * @param score    The score object to be written to the file.
-     * @param fileName The name of the file where the score should be stored.
-     * @throws IOException If an error occurs while writing to the file.
+     * @param score    the {@code Score} object to be written.
+     * @param fileName the file path where the score record should be appended.
+     * @throws IOException if an error occurs while writing to the file.
      */
-    static void appendScoreToFile(
-            final Score  score,
-            final String fileName)
-            throws IOException
+    static void appendScoreToFile(final Score  score,
+                                  final String fileName)
+                                  throws IOException
     {
-        try (final FileWriter     fw      = new FileWriter(fileName, true);
-             final BufferedWriter bw      = new BufferedWriter(fw);
-             final PrintWriter    pw      = new PrintWriter(bw))
+        try (final FileWriter     fileWriter      = new FileWriter(fileName, true);
+             final BufferedWriter bufferedWriter  = new BufferedWriter(fileWriter);
+             final PrintWriter    printWriter     = new PrintWriter(bufferedWriter))
         {
-            pw.println(score.toString());
-            pw.println();
+            printWriter.println(score.toString());
+            printWriter.println();
         }
     }
 
     /**
-     * Compares the current score against the highest recorded average score
-     * from a file and displays a message if a new high score is achieved.
+     * Reads high score records from a file and compares them with the current score.
+     * <p>
+     * This method reads all score records from the specified file using {@link #readScoresFromFile(String)},
+     * determines the highest average score per game from the list, and then compares it with the current score's
+     * average (obtained via {@link #getAverageScorePerGame()}). Depending on the comparison:
+     * <ul>
+     *   <li>If no previous records exist, a congratulatory message is printed indicating that the current score is
+     *       the new high score.</li>
+     *   <li>If the current average is higher than the previous high,
+     *       a message is printed indicating the new high score,
+     *       along with the previous record's average and timestamp.</li>
+     *   <li>If the current average does not exceed the previous high,
+     *       a message is printed informing the user of the existing record.</li>
+     * </ul>
+     * </p>
      *
-     * @param currentScore The current score to compare against the high score.
+     * @param currentScore the current {@code Score} to be compared.
+     * @param fileName     the file containing previous score records.
      */
     static void checkHighScore(final Score currentScore,
                                final String fileName)
@@ -257,16 +317,23 @@ final class Score
             }
         } catch (final IOException e)
         {
-            System.out.println("Error reading score file: " + e.getMessage());
+            throw new IllegalArgumentException(
+                    "Error reading score file: " + e.getMessage());
         }
     }
 
     /**
-     * Reads and parses scores from a file into a list of Score objects.
+     * Reads score records from a file and parses them into a list of {@code Score} objects.
+     * <p>
+     * This method reads all lines of text from the specified file. It then iterates through the lines,
+     * grouping non-empty lines into a record. When an empty line is encountered or the end of file is reached,
+     * the grouped lines are passed to {@link #parseScore(List)} to construct a {@code Score} object which is then
+     * added to a list. The list of {@code Score} objects is returned.
+     * </p>
      *
-     * @param fileName The name of the file containing score records.
-     * @return A list of Score objects parsed from the file.
-     * @throws IOException If an error occurs while reading the file.
+     * @param fileName the file path from which to read score records.
+     * @return a {@code List<Score>} containing all parsed score records.
+     * @throws IOException if an error occurs while reading the file.
      */
     static List<Score> readScoresFromFile(
             final String fileName)
@@ -281,7 +348,7 @@ final class Score
         lines   = Files.readAllLines(Paths.get(fileName));
         record  = new ArrayList<>();
 
-        for (String line : lines)
+        for (final String line : lines)
         {
             if (line.trim().isEmpty())
             {
@@ -312,9 +379,13 @@ final class Score
 
     /**
      * Calculates the total score for the session.
+     * <p>
+     * The total score is computed by multiplying the number of first-attempt correct answers by the constant
+     * {@code FIRST_CORRECT_LINE_INDEX} (representing two points per first-attempt) and then adding the number
+     * of second-attempt correct answers (worth one point each).
+     * </p>
      *
-     * @return The total score, where first-attempt correct answers are worth
-     * 2 points and second-attempt correct answers are worth 1 point.
+     * @return the total score as an integer.
      */
     int getScore()
     {
@@ -326,9 +397,13 @@ final class Score
     }
 
     /**
-     * Computes the average score per game in the session.
+     * Computes the average score per game for the session.
+     * <p>
+     * The average score is calculated by dividing the total score (as computed by {@link #getScore()})
+     * by the number of games played. The result is returned as a {@code double}.
+     * </p>
      *
-     * @return The average score per game.
+     * @return the average score per game.
      */
     double getAverageScorePerGame()
     {
@@ -339,10 +414,22 @@ final class Score
     }
 
     /**
-     * Returns a string representation of the score, including all relevant details.
+     * Returns a formatted string representation of the score record.
+     * <p>
+     * The string representation includes:
+     * <ul>
+     *   <li>The date and time when the score was recorded, prefixed by {@code dateTimeText}.</li>
+     *   <li>The number of games played, prefixed by {@code gamesPlayedText}.</li>
+     *   <li>The count of correct first attempts, prefixed by {@code correctFirstAttemptText}.</li>
+     *   <li>The count of correct second attempts, prefixed by {@code correctSecondAttemptText}.</li>
+     *   <li>The count of incorrect attempts, prefixed by {@code incorrectAttemptsText}.</li>
+     * </ul>
+     * Additionally, if only one game was played (i.e. {@code numGamesPlayed} equals {@code GAMES_LINE_INDEX}),
+     * a simple "Score: ..." message is appended. Otherwise, both the total score and
+     * average score per game are included.
+     * </p>
      *
-     * @return A formatted string containing the date, number of games,
-     * correct and incorrect answers, and calculated scores.
+     * @return a formatted {@code String} detailing all score statistics.
      */
     @Override
     public String toString()

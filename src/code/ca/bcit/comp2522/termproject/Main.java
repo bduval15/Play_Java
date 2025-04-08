@@ -1,6 +1,6 @@
 package ca.bcit.comp2522.termproject;
 
-import ca.bcit.comp2522.termproject.resourcerouter.ResourceRouterMainMenu;
+import ca.bcit.comp2522.termproject.resourcerouter.ResourceRouter;
 import ca.bcit.comp2522.termproject.numbergame.NumberGameMainMenu;
 import ca.bcit.comp2522.termproject.wordgame.WordGame;
 import javafx.application.Platform;
@@ -15,7 +15,7 @@ import java.util.Scanner;
  * <ul>
  *   <li>The Word Game, which is handled by {@link WordGame}</li>
  *   <li>The Number Game, which is launched by {@link NumberGameMainMenu}</li>
- *   <li>The Resource Router Game, which is launched by {@link ResourceRouterMainMenu}</li>
+ *   <li>The Resource Router Game, which is launched by {@link ResourceRouter}</li>
  * </ul>
  * </p>
  *
@@ -29,7 +29,7 @@ import java.util.Scanner;
  * To exit the application, the user should input "Q".
  * </p>
  */
-public class Main
+public final class Main
 {
     /**
      * The main method initializes the JavaFX platform, sets up the console-based game selection menu,
@@ -54,9 +54,9 @@ public class Main
         while (true)
         {
             System.out.println("Select a game:");
-            System.out.println("Press W to play the Word game.");
-            System.out.println("Press N to play the Number game.");
-            System.out.println("Press M to play the Resource Router game.");
+            System.out.println("Press W to play the Word Game.");
+            System.out.println("Press N to play the Number Game.");
+            System.out.println("Press M to play Resource Router.");
             System.out.println("Press Q to quit.");
 
             final String input;
@@ -69,16 +69,21 @@ public class Main
             }
             else if (input.equalsIgnoreCase("W"))
             {
-                WordGame wordGame = new WordGame();
+                System.out.println("Loading Word Game...");
+                final WordGame wordGame;
+                wordGame = new WordGame();
+                
                 wordGame.playWordGame();
             }
             else if (input.equalsIgnoreCase("N"))
             {
+                System.out.println("Loading Number Game...");
                 NumberGameMainMenu.launchGame();
             }
             else if (input.equalsIgnoreCase("M"))
             {
-                ResourceRouterMainMenu.launchGame();
+                System.out.println("Loading Resource Router...");
+                ResourceRouter.launchGame();
             }
             else
             {
@@ -90,4 +95,3 @@ public class Main
         Platform.exit();
     }
 }
-

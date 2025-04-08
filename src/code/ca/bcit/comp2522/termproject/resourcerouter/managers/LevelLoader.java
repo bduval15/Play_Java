@@ -11,42 +11,54 @@ import java.util.List;
 import java.util.stream.Stream;
 
 /**
- * LevelLoader is a final utility class responsible for loading level configurations from text files.
+ * The LevelLoader class is a final utility that reads and interprets level
+ * configuration files from the resource directory, ultimately producing a
+ * LevelManager for each loaded level.
+ *
  * <p>
- * Level files are stored in the resource directory (specifically under "/levels/") and follow a naming pattern
- * of "level{number}.txt", where {number} is a positive integer representing the level number.
+ * Level files must follow the naming pattern "level{number}.txt" (e.g.,
+ * "level3.txt"), and are stored under "/levels/". Each line in these files can
+ * define one of the following directives:
  * </p>
- * <p>
- * The class reads the level file line by line, processing each line to extract configuration directives and
- * node definitions for a level. The following configuration directives are recognized:
  * <ul>
- *   <li>
- *     <strong>PROMPT:</strong> Lines starting with the keyword {@value #PROMPT_KEYWORD} indicate the level prompt.
- *     The text following the keyword is used as a prompt to provide instructions or narrative to the player.
- *   </li>
- *   <li>
- *     <strong>TIME_LIMIT:</strong> Lines beginning with {@value #TIME_LIMIT_KEYWORD} define the time limit for the level.
- *     The expected format is "TIME_LIMIT {number}", where {number} is a positive value representing the time limit in seconds.
- *   </li>
- *   <li>
- *     <strong>NODE:</strong> Lines beginning with {@value #NODE_DEFINITION_KEYWORD} define a game node.
- *     A valid node definition must contain at least five parts (NODE, type, ID, X-coordinate, and Y-coordinate) and
- *     may include an optional sixth part for additional configuration data (such as a resource recipe, demand, or delay).
+ *   <li><strong>PROMPT:</strong> Declares the text used to narrate or provide
+ *   instructions for the level.</li>
+ *   <li><strong>TIME_LIMIT:</strong> Specifies the maximum time (in seconds)
+ *   allowed for the level (e.g., "TIME_LIMIT 120"). Must be a positive value.</li>
+ *   <li><strong>NODE:</strong> Describes a game node's type, ID, position
+ *   coordinates (X, Y), and optionally a configuration token.</li>
  * </ul>
- * </p>
+ *
  * <p>
- * During parsing, any lines that are empty or start with the comment prefix {@value #COMMENT_PREFIX} are ignored.
- * The class uses these directives to build a {@link LevelManager} object, which encapsulates the level number,
- * a list of immutable node definitions, the time limit for the level, and the prompt text.
+ * During file parsing, any empty lines or lines beginning with
+ * {@code COMMENT_PREFIX} ("#") are ignored. For recognized directives, the class
+ * extracts relevant data such as node attributes or the time limit. If a line
+ * is malformed (e.g., missing tokens or invalid numeric values), a
+ * {@link ca.bcit.comp2522.termproject.resourcerouter.util.LevelLoadException}
+ * is thrown to indicate the error. If no valid node definitions are found after
+ * processing, the loader returns null to signal an unsuccessful load.
  * </p>
+ *
  * <p>
- * If the level file does not exist, LevelLoader logs an error message and returns null.
- * If any I/O or parsing errors occur (for example, due to malformed numeric values or missing required tokens),
- * these are caught and logged, and an empty {@code Optional} is returned.
+ * In typical usage, {@code loadLevel(int levelNumber)} will:
+ * <ol>
+ *   <li>Construct the filename using "level{levelNumber}.txt" and locate it
+ *       under the "/levels/" directory.</li>
+ *   <li>Open the file using UTF-8 encoding, read each line into a stream,
+ *       and ignore any lines that are empty or start with "#".</li>
+ *   <li>Process each recognized directive by delegating to internal parsing
+ *       methods (e.g., {@code parseLine}) to build a list of node definitions
+ *       and update time limits or prompts.</li>
+ *   <li>Construct a new {@code LevelManager} with the resulting definitions
+ *       and settings, or return null if none are valid.</li>
+ * </ol>
  * </p>
+ *
  * <p>
- * In summary, LevelLoader converts the raw text data of a level file into a structured {@link LevelManager} object,
- * providing the necessary configuration for initializing a level in the game.
+ * This approach ensures that all level data is parsed consistently, with any
+ * critical errors represented as exceptions, while non-critical lines (such as
+ * comments) are ignored. This design keeps the loading mechanism robust,
+ * structured, and easy to maintain or extend for additional directives.
  * </p>
  *
  * @author Braeden Duval
@@ -77,30 +89,29 @@ public final class LevelLoader
     private static final int FIRST_SPLIT_VALUE          = 1;
 
     /*
-     * Parses the level data from a stream of lines and constructs a LevelManager object.
+     * This method processes the level file provided as a stream of lines.
      *
-     * This method reads each trimmed line from the provided lines stream,
-     * ignoring empty or commented lines.
-     * Recognized lines are processed to extract either:
+     * The steps are:
+     * 1. Map each line to its trimmed version.
+     * 2. Filter out lines that are either empty or begin with the COMMENT_PREFIX.
+     * 3. For each remaining line:
+     *    a. Convert the line to uppercase to perform case-insensitive comparisons.
+     *    b. If the line starts with PROMPT_KEYWORD, extract the prompt text (everything after the keyword)
+     *       and store it in a one-element array.
+     *    c. If the line starts with TIME_LIMIT_KEYWORD, split the line into tokens by whitespace.
+     *       If there are exactly 2 tokens, attempt to parse the second token into a double.
+     *       If the parsed value is greater than zero, update the time limit in a one-element array.
+     *       Otherwise, throw a LevelLoadException indicating that a non-positive time limit is invalid.
+     *    d. If the line starts with NODE_DEFINITION_KEYWORD, pass the line along with the list of definitions
+     *       and the timeLimit array to the parseLine method.
+     *    e. If the line does not match any expected directive,
+     *       throw a LevelLoadException to signal an unrecognized directive.
+     * 4. After processing all lines, if the list of definitions is empty,
+     *    throw a LevelLoadException because valid nodes are required.
+     * 5. Otherwise, construct and return a new LevelManager using the levelNumber,
+     *    collected definitions, final time limit, and prompt.
      *
-     *   A PROMPT directive that sets the level prompt text.
-     *   A TIME_LIMIT directive that updates the level's time limit.
-     *   A NODE definition, which is further parsed to create a LevelManager.NodeDefinition
-     *       and added to the definitions list.
-     *
-     *
-     * Any unrecognized lines are logged with a warning and skipped.
-     * If no valid NODE definitions are found, this method
-     * logs a warning and returns null.
-     *
-     *
-     * @param levelNumber the numeric identifier for the level being parsed
-     * @param lines       a stream of String lines from the level file
-     *
-     * @return a new LevelManager instance representing the parsed level,
-     * or null if no valid NODE definitions were found
-     *
-     * @throws LevelLoadException if a fatal parsing error occurs during line processing
+     * Throws LevelLoadException if a critical parsing error occurs.
      */
     private static LevelManager parseLevelData(final int levelNumber,
                                                final Stream<String> lines)
@@ -111,7 +122,7 @@ public final class LevelLoader
         final String[]                          prompt;
 
         definitions     = new ArrayList<>();
-        timeLimit       = new double[]{ LevelManager.DEFAULT_TIME_LIMIT_SECONDS };
+        timeLimit       = new double[] {LevelManager.getDefaultTime()};
         prompt          = new String[]{ "" };
 
         lines.map(String::trim)
@@ -146,39 +157,30 @@ public final class LevelLoader
                                     }
                                     else
                                     {
-                                        System.err.println(
-                                        "Warning: Invalid non-positive TIME_LIMIT ignored: " + line);
+                                        throw new LevelLoadException(
+                                                "Invalid non-positive: " + line);
                                     }
                                 }
                                 catch (final NumberFormatException e)
                                 {
-                                    System.err.println(
-                                    "Warning: Invalid number format for TIME_LIMIT, ignoring line: " + line);
+                                    throw new LevelLoadException(
+                                            "Invalid number format for TIME_LIMIT" + line + e);
                                 }
-                            }
-                            else
-                            {
-                                System.err.println("Warning: TIME_LIMIT line ignored: " + line);
                             }
                         }
                         else if (upperLine.startsWith(NODE_DEFINITION_KEYWORD))
                         {
                             parseLine(line, definitions, timeLimit);
                         }
-                        else
-                        {
-                            System.err.println("Warning: Skipping unrecognized line: " + line);
-                        }
                     }
                     catch (final LevelLoadException e)
                     {
-                        System.err.println(e.getMessage());
+                        e.printStackTrace();
                     }
                 });
 
         if (definitions.isEmpty())
         {
-            System.err.println("Warning: Level " + levelNumber + " contains no valid NODE definitions.");
             return null;
         }
 
@@ -192,28 +194,32 @@ public final class LevelLoader
     }
 
     /*
-     * Parses a single non-empty, non-comment line from the level file, handling both TIME_LIMIT and
-     * NODE directives.
+     * This method takes a single line of text (assumed to be non-empty and not a comment) and attempts to parse it
+     * according to the following rules:
+     * 1. Split the line using whitespace as the delimiter, with a maximum of NODE_PARTS_MAX tokens.
+     * 2. Check if the token count is sufficient; if not, throw a LevelLoadException.
+     * 3. Examine the first token (converted to uppercase) to determine the directive:
+     *    a. If the keyword is TIME_LIMIT_KEYWORD:
+     *         i. Ensure exactly two tokens exist.
+     *        ii. Parse the second token as a double.
+     *       iii. If the parsed double is positive, update the timeLimit array with this value.
+     *        iv. If not, throw a LevelLoadException.
+     *    b. If the keyword is NODE_DEFINITION_KEYWORD:
+     *         i. Verify that there are at least NODE_PARTS_MIN tokens.
+     *        ii. Extract the node type (token at index NODE_PART_INDEX_TYPE), node ID (token at index NODE_PART_INDEX_ID),
+     *            and parse the X and Y coordinates (tokens at indices NODE_PART_INDEX_X and NODE_PART_INDEX_Y) as doubles.
+     *       iii. Optionally, extract a configuration token (if present).
+     *        iv. Validate that the node ID is non-empty.
+     *         v. Create a new NodeDefinition instance with these values and add it to the definitions list.
+     *    c. If the keyword is not recognized, throw a LevelLoadException indicating the unrecognized directive.
      *
-     * If the line is identified as a TIME_LIMIT directive, it attempts to parse a double value and update
-     * the timeLimit array accordingly. If it is identified as a NODE directive, the method extracts
-     * the node type, ID, X/Y coordinates, and any optional configuration token, adding a new
-     * LevelManager.NodeDefinition to definitions.
-     *
-     *
-     * An ArrayIndexOutOfBoundsException or NumberFormatException may occur if the line is malformed,
-     * in which case a LevelLoadException is thrown with a descriptive error message.
-     *
-     *
-     * @param line        the original line to parse
-     * @param definitions a mutable list where valid LevelManager.NodeDefinition objects are added
-     * @param timeLimit   an array holding the time limit value (index 0) that may be updated by TIME_LIMIT lines
-     *
-     * @throws LevelLoadException if the line is missing required fields (TYPE, ID, X, Y) for a NODE or has bad numeric values
+     * Any NumberFormatException or ArrayIndexOutOfBoundsException
+     * encountered during parsing is caught and rethrown as a LevelLoadException.
      */
     private static void parseLine(final String line,
                                   final List<LevelManager.NodeDefinition> definitions,
-                                  final double[] timeLimit) throws LevelLoadException
+                                  final double[] timeLimit)
+                                  throws LevelLoadException
     {
         final String[] parts;
         parts = line.split("\\s+", NODE_PARTS_MAX);
@@ -242,17 +248,15 @@ public final class LevelLoader
                         }
                         else
                         {
-                            System.err.println("Warning: Invalid non-positive TIME_LIMIT ignored: " + line);
+                            throw new LevelLoadException(
+                                    "Invalid non-positive TIME_LIMIT" + line);
                         }
                     }
                     catch (final NumberFormatException e)
                     {
-                        System.err.println("Warning: Invalid number format for TIME_LIMIT, ignoring line: " + line);
+                        throw new LevelLoadException(
+                                "Invalid number format for TIME_LIMIT" + line);
                     }
-                }
-                else
-                {
-                    System.err.println("Warning: Malformed TIME_LIMIT line ignored: " + line);
                 }
                 break;
 
@@ -263,15 +267,15 @@ public final class LevelLoader
                     try
                     {
                         final String type;
-                        final String id;
-                        final double x;
-                        final double y;
+                        final String nodeId;
+                        final double xCord;
+                        final double yCord;
                         final String config;
 
                         type    = parts[NODE_PART_INDEX_TYPE];
-                        id      = parts[NODE_PART_INDEX_ID];
-                        x       = Double.parseDouble(parts[NODE_PART_INDEX_X]);
-                        y       = Double.parseDouble(parts[NODE_PART_INDEX_Y]);
+                        nodeId  = parts[NODE_PART_INDEX_ID];
+                        xCord   = Double.parseDouble(parts[NODE_PART_INDEX_X]);
+                        yCord   = Double.parseDouble(parts[NODE_PART_INDEX_Y]);
 
                         if (parts.length > NODE_PART_INDEX_CONFIG)
                         {
@@ -281,12 +285,16 @@ public final class LevelLoader
                         {
                             config = null;
                         }
-                        if (id == null || id.trim().isEmpty())
+                        if (nodeId == null || nodeId.trim().isEmpty())
                         {
                             throw new LevelLoadException("Node ID cannot be empty in line: " + line);
                         }
 
-                        definitions.add(new LevelManager.NodeDefinition(type, id, x, y, config));
+                        definitions.add(new LevelManager.NodeDefinition(type,
+                                                                        nodeId,
+                                                                        xCord,
+                                                                        yCord,
+                                                                        config));
 
                     }
                     catch (final NumberFormatException e)
@@ -308,33 +316,44 @@ public final class LevelLoader
                 break;
 
             default:
-                System.err.println("Warning: Skipping unrecognized line keyword '" +
-                                           keyword + "' in line: " + line);
-                break;
+                throw new LevelLoadException("Unrecognized line keyword '" +
+                                             keyword + "' in line: " + line);
         }
     }
 
     /**
-     * Loads a level by its number from the resource directory and returns a parsed {@link LevelManager} object.
+     * Loads a level configuration from a text file and returns a LevelManager representing the level's settings.
      * <p>
-     * This method locates the level file with the naming pattern {@code level{levelNumber}.txt} inside the
-     * {@code /levels/} directory. If the file is found, it is read line by line, and each line is passed to
-     * {@link #parseLevelData(int, Stream)} for parsing into a structured level configuration.
+     * The method builds the filename using the pattern "level{levelNumber}.txt" by concatenating the
+     * level filename prefix, the provided levelNumber, and the filename suffix. It then constructs the resource path
+     * by prepending the resource directory ("/levels/") to the filename.
      * </p>
      * <p>
-     * If the level file does not exist, or if any I/O or parsing errors occur (e.g., invalid numeric
-     * format), an error is logged and {@code null} is returned.
+     * The method attempts to locate the file by calling getResourceAsStream() on the LevelLoader class.
+     * If the file is not found, or if the levelNumber is invalid (i.e. less than or equal to zero),
+     * the method returns null.
+     * </p>
+     * <p>
+     * If the file is found, the method opens it using an InputStreamReader with UTF-8 encoding,
+     * wraps the stream in a BufferedReader, and obtains a Stream<String> of its lines.
+     * This stream is then passed to the private {@code parseLevelData(int, Stream)} method, which processes the
+     * lines to extract configuration directives (such as prompt, time limit, and node definitions) and
+     * constructs a LevelManager object.
+     * </p>
+     * <p>
+     * If any IOException or LevelLoadException is encountered during file reading or parsing,
+     * the exception is caught and the method returns null, indicating that the level configuration could not be loaded.
      * </p>
      *
-     * @param levelNumber a positive integer identifying the desired level
-     * @return a {@link LevelManager} representing the level data, or {@code null} if the file is not found
-     *         or could not be successfully parsed
+     * @param levelNumber a positive integer representing the level number to load
+     * @return a LevelManager instance representing the loaded level configuration, or null if the file is missing,
+     *         levelNumber is invalid, or an error occurs during reading or parsing
      */
     public static LevelManager loadLevel(final int levelNumber)
+
     {
         if (levelNumber <= ZERO_INDEX)
         {
-            System.err.println("Invalid level number requested: " + levelNumber);
             return null;
         }
 
@@ -344,37 +363,24 @@ public final class LevelLoader
         fileName        = LEVEL_FILENAME_PREFIX + levelNumber + LEVEL_FILENAME_SUFFIX;
         resourcePath    = LEVEL_RESOURCE_DIRECTORY + fileName;
 
-        final InputStream is;
-        is = LevelLoader.class.getResourceAsStream(resourcePath);
+        final InputStream inputStream;
+        inputStream = LevelLoader.class.getResourceAsStream(resourcePath);
 
-        if (is == null)
+        if (inputStream == null)
         {
-            System.err.println("Level resource not found: " + resourcePath);
             return null;
         }
-        try (final InputStreamReader isr = new InputStreamReader(is, StandardCharsets.UTF_8);
-             final BufferedReader reader = new BufferedReader(isr))
+        try (final InputStreamReader inputStreamReader = new InputStreamReader(inputStream,
+                                                                               StandardCharsets.UTF_8);
+             final BufferedReader reader               = new BufferedReader(inputStreamReader))
         {
             final LevelManager levelManager;
-            levelManager = parseLevelData(levelNumber, reader.lines());
+            levelManager = parseLevelData(levelNumber,
+                                          reader.lines());
             return levelManager;
         }
-        catch (final IOException e)
+        catch (final LevelLoadException | IOException e)
         {
-            System.err.println("Error reading level file " + resourcePath + ": " + e.getMessage());
-            return null;
-
-        }
-        catch (final LevelLoadException e)
-        {
-            System.err.println("Error parsing level " + resourcePath + ": " + e.getMessage());
-            return null;
-
-        }
-        catch (final Exception e)
-        {
-            System.err.println("Unexpected error loading level " + resourcePath + ": " + e.getMessage());
-            e.printStackTrace();
             return null;
         }
     }

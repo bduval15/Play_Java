@@ -35,12 +35,18 @@ final class World
     private static final String     filepath                   = "src/resources/";
 
     /*
-     * Formats country names by rearranging names that contain a comma.
-     * If the country name is in the format "Last, First", it is converted
-     * to "First Last".
+     * Reformats a raw country name.
      *
-     * @param countryName The raw country name as read from the file.
-     * @return The formatted country name.
+     * If the provided countryName contains a comma (as in the format "Last, First"),
+     * this method splits the string into two parts using the constant MAX_WORD_SPLIT as the limit,
+     * trims each part, and then returns a new string in the format "First Last"
+     * (i.e. the second part followed by a space
+     * and then the first part). If the countryName does not contain a comma, it is returned unchanged.
+     * </p>
+     *
+     * @param countryName the raw country name as read from a file.
+     * @return a reformatted country name in "First Last" order if a comma is present;
+     * otherwise, the original countryName.
      */
     private static String formatCountryName(final String countryName)
     {
@@ -59,18 +65,43 @@ final class World
     }
 
     /**
-     * <p>Builds a map of country names mapped to {@code Country} objects by reading
-     * country data from text files stored in the specified directory.
-     * Each file contains country details, including the capital city
-     * and up to three facts. Regex ensures only .txt files with the format
-     * of singleChar.txt files are scanned.</p>
+     * Builds an immutable map of country names to {@code Country} objects by reading country data from text files.
+     * <p>
+     * This method performs the following steps:
+     * <ol>
+     *   <li>Creates a {@code File} object for the directory specified by the constant {@code filepath}.</li>
+     *   <li>Filters the files in that directory to include only those whose names
+     *       match the regular expression "^[a-zA-Z]\\.txt$".</li>
+     *   <li>If no valid files are found or the directory is empty, an empty map is returned.</li>
+     *   <li>For each valid file:
+     *     <ol>
+     *       <li>A {@link Scanner} is opened for the file using a try-with-resources statement.</li>
+     *       <li>The scanner reads lines until a non-empty line containing a colon (":") is found.
+     *       This line is assumed to include both the country name and its capital city, separated by a colon.</li>
+     *       <li>The line is split into two parts using {@code MAX_WORD_SPLIT} as the limit:
+     *           <ul>
+     *             <li>The first part (before the colon) is the raw country name,
+     *                 which is reformatted using {@link #formatCountryName(String)}.</li>
+     *             <li>The second part (after the colon) is the capital city name.</li>
+     *           </ul>
+     *       </li>
+     *       <li>Up to {@code TOTAL_FACTS} subsequent lines are read (if available)
+     *           and stored as facts about the country.</li>
+     *       <li>A new {@code Country} object is created with the formatted country name and the capital city,
+     *           and its facts are set.</li>
+     *       <li>The {@code Country} object is then added to a map with the formatted country name as the key.</li>
+     *     </ol>
+     *   </li>
+     *   <li>After processing all files, the map is wrapped in an unmodifiable map and returned.</li>
+     * </ol>
+     * </p>
      *
-     * @return An immutable map containing country names as keys
-     * and {@code Country} objects as values.
-     * @throws FileNotFoundException If the resource directory or any file is not found.
+     * @return an immutable {@code Map} where each key is a formatted country name and
+     *         each value is the corresponding {@code Country} object.
+     * @throws FileNotFoundException if the resource directory or any required file is not found.
      */
     static Map<String, Country> buildCountries()
-            throws FileNotFoundException
+           throws FileNotFoundException
     {
 
         final File                  folder;

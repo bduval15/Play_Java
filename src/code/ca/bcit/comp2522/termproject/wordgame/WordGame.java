@@ -7,25 +7,30 @@ import java.util.*;
  * Represents a quiz-based word game that challenges users on their knowledge of countries, capital cities,
  * and country-related facts.
  * <p>
- * The game operates in rounds with a fixed number of questions per game. Each question can ask the user to
- * identify a country based on its capital city, to provide the capital city for a given country, or to associate
- * a fact with the correct country. User responses are evaluated for correctness on both the first and a potential
- * second attempt. The game tracks the number of games played, correct answers on first attempts, correct answers on
- * second attempts, and incorrect answers.
+ * The game operates by posing a fixed number of questions per round (defined by {@code NUM_QUESTIONS_PER_GAME}).
+ * Each question is randomly determined to be one of several types:
+ * <ul>
+ *   <li>Identifying the country given its capital city.</li>
+ *   <li>Identifying the capital city given its country.</li>
+ *   <li>Associating a fact with its correct country.</li>
+ * </ul>
+ * For each question, the user is given up to two attempts. First-attempt correct answers
+ * contribute more toward the score, while a correct answer on the second attempt still earns a lower credit.
+ * If both attempts are incorrect, the correct answer is shown.
  * </p>
  * <p>
- * After a game round, the results are displayed and the user is prompted to decide whether to play another round.
- * At the end of the session, a final score is calculated from the accumulated statistics. This score is compared
- * against previous high scores stored in a file, and a message displays when a new high score is achieved.
- * Additionally, the session’s score record appends to the high score file for future reference.
+ * After each round, the round results are displayed (number of first-attempt correct answers,
+ * second-attempt correct answers, and incorrect answers). The user is then prompted via the console
+ * to choose whether to play again. At the end of the session, overall statistics are compiled into
+ * a {@link Score} object. This final score is compared to previous high scores stored in a file
+ * (using methods from the {@link Score} class), and then it is appended to the score file.
  * </p>
  * <p>
- * The class makes use of file I/O operations to persist game scores and utilizes a {@link Scanner} to capture user input
- * from the console. It interacts with other components such as the {@link Country} class for country data and the {@link Score}
- * class for score calculation and management.
+ * The class utilizes file I/O to persist game scores, uses a {@link Scanner} for console input, and interacts with
+ * the {@link Country} class for country data and the {@link Score} class for score management.
  * </p>
  *
- * @author Braeden Duval
+ * @author Braeden
  * @version 1.0
  */
 
@@ -50,7 +55,19 @@ public final class WordGame
     private int totalIncorrect;
 
     /**
-     * Constructor to initialize the game state and resources
+     * Constructs a new {@code WordGame} instance and initializes all game state and required resources.
+     * <p>
+     * This constructor performs the following:
+     * <ul>
+     *   <li>Initializes all score counters to zero.</li>
+     *   <li>Creates a {@link Scanner} to capture console input and a {@link Random}
+     *   instance for randomizing questions.</li>
+     *   <li>Attempts to load country data by calling {@link World#buildCountries()}.
+     *   If successful, the countries are stored in a map, and the country names (keys)
+     *   are extracted into a list for random selection.</li>
+     * </ul>
+     * If the country data file is not found, a message ("File not found") is printed to the console.
+     * </p>
      */
     public WordGame()
     {
@@ -73,17 +90,22 @@ public final class WordGame
             this.countryMap     = World.buildCountries();
             this.countryKeys    = new ArrayList<>(countryMap.keySet());
         }
-        catch (FileNotFoundException e)
+        catch (final FileNotFoundException e)
         {
-            System.out.println("File not found");
+            e.printStackTrace();
         }
     }
 
     /*
-     * Prompts the user to play again and validates their response.
+     * Continuously prompts the user to decide whether to play another round until a valid response is entered.
      *
-     * @param scan The scanner object to read user input.
-     * @return {true} if the user wants to play again, {false} otherwise.
+     * The method prints a prompt "Would you like to play again? (Yes/No)" and reads the user's input via the console.
+     * If the input (ignoring case) is "Yes", the method returns true.
+     * If the input is "No", it returns false. For any other input, an error message is
+     * displayed and the prompt is repeated.
+     *
+     *
+     * @return true if the user chooses to play again; false otherwise.
      */
     private boolean askPlayAgain()
     {
@@ -107,12 +129,47 @@ public final class WordGame
             }
         }
     }
-    
+
     /**
-     * The method that starts the game.
-     * It initializes the game, loads country data, handles game rounds,
-     * tracks user scores, and checks for high scores.
-     *
+     * Starts and manages the word game session.
+     * <p>
+     * This method carries out the following steps:
+     * <ol>
+     *   <li>Determines the high score file to use by retrieving the system property {@code score.file}
+     *   (defaults to "score.txt").
+     *       It then checks if the file exists; if not, it attempts to create it and reports the outcome.</li>
+     *   <li>Enters a loop to conduct game rounds. In each round:
+     *       <ul>
+     *         <li>The total games played counter is incremented.</li>
+     *         <li>A fixed number of questions (defined by {@code NUM_QUESTIONS_PER_GAME}) is asked.</li>
+     *         <li>For each question, a random question type is determined:
+     *             <ul>
+     *               <li>If the question type is {@code FIRST_QUESTION_TYPE},
+     *               the user is asked to identify the country given its capital.</li>
+     *               <li>If the type is {@code SECOND_QUESTION_TYPE},
+     *               the user is asked to provide the capital of a given country.</li>
+     *               <li>If the type is {@code THIRD_QUESTION_TYPE},
+     *               the user is asked to associate a fact (randomly selected from the country's facts)
+     *               with the correct country. If no facts are available,
+     *               it falls back to asking as in the first type.</li>
+     *             </ul>
+     *         </li>
+     *         <li>The user's answer is evaluated. If correct on the first try, the corresponding counter is incremented.
+     *             If incorrect, the user is given a second attempt.
+     *             A correct answer on the second attempt increments a different counter;
+     *             otherwise, the incorrect counter is incremented and the correct answer displayed.</li>
+     *       </ul>
+     *   </li>
+     *   <li>After processing all questions in the round, the round’s results are printed to the console.</li>
+     *   <li>The user is then asked (via {@link #askPlayAgain()}) if they wish to play another round.</li>
+     *   <li>Once the user opts out, a {@link Score} object is created using the cumulative statistics,
+     *       which is then compared against previous high scores by invoking
+     *       {@link Score#checkHighScore(Score, String)}.</li>
+     *   <li>Finally, the current score is appended to the score file by calling
+     *       {@link Score#appendScoreToFile(Score, String)}.
+     *       Any I/O errors encountered during this process are caught and reported.</li>
+     * </ol>
+     * </p>
      */
     public void playWordGame()
     {
@@ -123,22 +180,17 @@ public final class WordGame
         try
         {
             File file = new File(scoreFile);
-            if (!file.exists())
+
+            if (!file.exists() &&
+                !file.createNewFile())
             {
-                if (file.createNewFile())
-                {
-                    System.out.println("File '" + scoreFile + "' created successfully.");
-                }
-                else
-                {
-                    System.out.println("Failed to create file '" + scoreFile + "'.");
-                }
+                throw new IOException("Failed to create file: " + scoreFile);
             }
         }
         catch (final IOException e)
         {
-            System.out.println("Error retrieving score file: " + e.getMessage());
-            e.printStackTrace();
+            throw new IllegalArgumentException(
+                    "Error retrieving score file: " + e.getMessage());
         }
 
         boolean playAgain = true;
@@ -288,7 +340,8 @@ public final class WordGame
         }
         catch (final IOException e)
         {
-            System.out.println("Error saving score: " + e.getMessage());
+            throw new IllegalArgumentException(
+                    "Error saving score: " + e.getMessage());
         }
     }
 }

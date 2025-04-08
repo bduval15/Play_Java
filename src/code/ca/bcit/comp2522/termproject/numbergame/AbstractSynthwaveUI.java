@@ -30,43 +30,84 @@ abstract class AbstractSynthwaveUI
 {
 
     /**
-     * Constructs and initializes the user interface components for this instance.
+     * Constructs and initializes the user interface components specific to the synthwave theme.
+     * <p>
+     * Implementations should:
+     * <ul>
+     *   <li>Create and layout primary UI elements such as buttons, labels, and score indicators.</li>
+     *   <li>Initialize styling elements consistent with the synthwave theme.</li>
+     *   <li>Set up any event listeners required for user interactions.</li>
+     * </ul>
+     * </p>
      */
-    protected abstract void buildUI();
+    abstract void buildUI();
 
     /**
-     * Updates the main informational label with the provided message.
+     * Updates the main informational label in the user interface with the provided message.
+     * <p>
+     * Implementations should:
+     * <ul>
+     *   <li>Ensure the message clearly communicates the current game status to the player.</li>
+     *   <li>Update the label visually without disrupting the ongoing gameplay.</li>
+     * </ul>
+     * </p>
      *
-     * @param message The message to display.
+     * @param message the message string to be displayed in the main information area.
      */
-    protected abstract void updateInfoLabel(String message);
+    abstract void updateInfoLabel(final String message);
 
     /**
-     * Resets the game board UI components (e.g., clears buttons, resets state).
+     * Resets the game board components to their initial state.
+     * <p>
+     * Implementations should:
+     * <ul>
+     *   <li>Clear any placed elements or previous game states from the UI components.</li>
+     *   <li>Re-enable interactive components necessary to start a new game.</li>
+     *   <li>Visually prepare the game board for fresh gameplay.</li>
+     * </ul>
+     * </p>
      */
-    protected abstract void resetGameBoard();
+    abstract void resetGameBoard();
 
     /**
-     * Disables all interactive UI controls, for example after the game is over.
+     * Disables all interactive controls in the user interface, typically after the game has ended.
+     * <p>
+     * Implementations should:
+     * <ul>
+     *   <li>Prevent further player interaction until a new game is initiated.</li>
+     *   <li>Clearly indicate visually that controls are inactive (e.g., grayed-out buttons).</li>
+     * </ul>
+     * </p>
      */
-    protected abstract void disableGameControls();
+    abstract void disableGameControls();
 
     /**
-     * Enables all interactive UI controls, for example when starting a new game.
-     */
-    protected abstract void enableGameControls();
-
-    /**
-     * Displays a game-over dialog with the specified title and message.
+     * Displays a dialog box or overlay indicating the game has ended, accompanied by a custom message.
+     * <p>
+     * Implementations should:
+     * <ul>
+     *   <li>Show the provided message clearly and prominently.</li>
+     *   <li>Include options for the player to acknowledge the message and possibly start a new game.</li>
+     *   <li>Ensure the dialog is styled consistently with the overall synthwave aesthetic.</li>
+     * </ul>
+     * </p>
      *
-     * @param message The message content.
+     * @param message the message to be shown in the game-over dialog.
      */
-    protected abstract void showGameOverDialog(final String message);
+    abstract void showGameOverDialog(final String message);
 
     /**
-     * Updates the score display on the UI.
+     * Updates the display of the player's score within the user interface.
+     * <p>
+     * Implementations should:
+     * <ul>
+     *   <li>Clearly present the updated score information to the player.</li>
+     *   <li>Ensure the score is displayed prominently and updates dynamically.</li>
+     *   <li>Maintain styling consistency with the synthwave theme.</li>
+     * </ul>
+     * </p>
      *
-     * @param scoreMessage The score details to display.
+     * @param scoreMessage a formatted string detailing the current score information.
      */
-    protected abstract void updateScoreDisplay(final String scoreMessage);
+    abstract void updateScoreDisplay(final String scoreMessage);
 }

@@ -1,6 +1,7 @@
 package ca.bcit.comp2522.termproject.resourcerouter.managers;
 
-import ca.bcit.comp2522.termproject.resourcerouter.ResourceRouterMainMenu;
+
+import ca.bcit.comp2522.termproject.resourcerouter.ResourceRouter;
 import ca.bcit.comp2522.termproject.resourcerouter.gameplay.GameNode;
 import ca.bcit.comp2522.termproject.resourcerouter.gameplay.NodeFactory;
 import ca.bcit.comp2522.termproject.resourcerouter.gameplay.Pipe;
@@ -13,7 +14,6 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.geometry.Point2D;
 import javafx.scene.Node;
-import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.Pane;
 import javafx.scene.shape.Line;
 import javafx.util.Duration;
@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -48,7 +47,7 @@ import java.util.Set;
  *       pipe states when needed.</li>
  *   <li><strong>Scoring:</strong> Calculates level scores based on simulation time and pipe usage (applying a penalty factor),
  *       updates the session score.
- *   <li><strong>UI Interaction:</strong> Interfaces with a {@link ResourceRouterMainMenu} instance to update visual elements such
+ *   <li><strong>UI Interaction:</strong> Interfaces with a {@link ResourceRouter} instance to update visual elements such
  *       as timers, scores, level numbers, and status messages.</li>
  *   <li><strong>State Transitions:</strong> Manages transitions between game states (e.g., MENU, PLAYING, LEVEL_COMPLETE,
  *       LEVEL_TRANSITION, GAME_OVER) using the {@link GameState} enum, ensuring that the appropriate UI updates occur at
@@ -94,32 +93,38 @@ public final class GameController
     private static final int SECOND_INDEX                   = 1;
     private static final int MAX_OUTGOING_PIPES             = 2;
     private static final int DEFAULT_VALUE                  = 0;
+    private static final int TOTAL_LEVEL_FILES_AVAILABLE    = 10;
+    private static final int LEVELS_PER_SESSION             = 3;
 
     private static final String SCORE_ZERO_STRING           = " Score=0";
 
-    public static final int TOTAL_LEVEL_FILES_AVAILABLE     = 10;
-    public static final int LEVELS_PER_SESSION              = 3;
-
-    private final ResourceRouterMainMenu    resourceRouterMainMenu;
+    private final ResourceRouter            resourceRouter;
     private final Pane                      gamePane;
     private final List<GameNode>            gameNodes;
     private final Map<String, GameNode>     nodeMap;
     private final List<Pipe>                pipes;
     private final List<Integer>             availableLevelNumbers;
 
-    private GameState       currentGameState = GameState.MENU;
+    private GameState       currentGameState;
     private Timeline        gameLoop;
     private LevelManager    currentLevelManager;
-    private String          id = "";
-
-    private boolean         simulationRunning       = false;
-    private double          timeRemaining           = ZERO_DOUBLE;
-    private double          simulationTimeElapsed   = ZERO_DOUBLE;
-    private int             ticksSincePipeChange    = DEFAULT_VALUE;
+    private String          nodeId;
+    private boolean         simulationActive;
+    private double          timeRemaining;
+    private double          simulationTimeElapsed;
+    private int             ticksSincePipeChange;
     private int             currentSessionScore;
+    private int             currentLevelIndex;
+    private List<Integer>   levelSequence;
 
-    public List<Integer>    levelSequenceForSession;
-    public int              currentLevelIndex;
+    {
+        currentGameState        = GameState.MENU;
+        nodeId = "";
+        simulationActive        = false;
+        timeRemaining           = ZERO_DOUBLE;
+        simulationTimeElapsed   = ZERO_DOUBLE;
+        ticksSincePipeChange    = DEFAULT_VALUE;
+    }
 
     /**
      * Constructs a new GameController instance, initializing the core simulation structures
@@ -130,18 +135,18 @@ public final class GameController
      * feedback and the specified {@code gamePane} for visual node placement.
      * </p>
      *
-     * @param resourceRouterMainMenu the main UI manager responsible for state changes and user interaction
+     * @param resourceRouter the main UI manager responsible for state changes and user interaction
      * @param gamePane               the JavaFX pane in which game visuals (nodes, pipes) are rendered
      *
      * @throws NullPointerException if {@code resourceRouterMainMenu} or {@code gamePane} is null
      */
-    public GameController(final ResourceRouterMainMenu resourceRouterMainMenu,
+    public GameController(final ResourceRouter resourceRouter,
                           final Pane gamePane)
     {
-        validateResourceRouterMainMenu  (resourceRouterMainMenu);
+        validateResourceRouterMainMenu  (resourceRouter);
         validateGamePane                (gamePane);
 
-        this.resourceRouterMainMenu = resourceRouterMainMenu;
+        this.resourceRouter         = resourceRouter;
         this.gamePane               = gamePane;
         this.gameNodes              = new ArrayList<>();
         this.nodeMap                = new HashMap<>();
@@ -154,21 +159,30 @@ public final class GameController
     }
 
     /*
-     * Ensures the ResourceRouterMainMenu reference is not null.
+     * Validates that the given ResourceRouter instance (the main menu) is not null.
      *
-     * @param menu the ResourceRouterMainMenu instance
-     * @throws NullPointerException if {@code menu} is null
+     * This method uses Objects.requireNonNull to ensure that the ResourceRouter provided
+     * is non-null. If it is null, a NullPointerException is thrown with a descriptive message.
+     * This check is critical because the ResourceRouter is used later to update UI elements
+     * and manage game state transitions.
+     *
+     * @param menu the ResourceRouter instance to validate
+     * @throws NullPointerException if menu is null
      */
-    private static void validateResourceRouterMainMenu(final ResourceRouterMainMenu menu)
+    private static void validateResourceRouterMainMenu(final ResourceRouter menu)
     {
         Objects.requireNonNull(menu, "ResourceRouterMainMenu cannot be null");
     }
 
     /*
-     * Ensures the Pane is not null.
+     * Validates that the provided game pane is not null.
      *
-     * @param pane the Pane instance to validate
-     * @throws NullPointerException if {@code pane} is null
+     * Uses Objects.requireNonNull to ensure the Pane used for rendering game visuals
+     * is non-null. If the pane is null, a NullPointerException is thrown with a message.
+     * This validation ensures that all graphical elements have a valid parent for display.
+     *
+     * @param pane the Pane to validate
+     * @throws NullPointerException if pane is null
      */
     private static void validateGamePane(final Pane pane)
     {
@@ -176,9 +190,13 @@ public final class GameController
     }
 
     /*
-     * Identifies available levels.
+     * Identifies and returns an unmodifiable list of available level numbers.
      *
-     * @return an unmodifiable list of available level numbers.
+     * Iterates from 1 to the constant TOTAL_LEVEL_FILES_AVAILABLE, adding each integer value
+     * to an ArrayList. After population, the list is wrapped using Collections.unmodifiableList
+     * to prevent further modifications and then returned.
+     *
+     * @return an unmodifiable List of level numbers (Integer)
      */
     private List<Integer> identifyAvailableLevels()
     {
@@ -197,52 +215,86 @@ public final class GameController
     }
 
     /*
-     * Handles game over: stops simulation, prompts for high score entry,
-     * resets level state, and changes game state.
+     * Handles the game-over scenario.
+     *
+     * This method stops the simulation by calling stopSimulation with a "Session complete" message.
+     * It then resets the level-related state by setting the level sequence to null and reinitializing
+     * the current level index. Finally, it clears any level-specific state and transitions the game state
+     * to GAME_OVER by calling changeGameState.
+     *
      */
     private void handleGameOver()
     {
         stopSimulation("Session complete");
 
-        levelSequenceForSession = null;
-        currentLevelIndex = INITIAL_LEVEL_INDEX;
+        levelSequence       = null;
+        currentLevelIndex   = INITIAL_LEVEL_INDEX;
         clearLevelState();
         changeGameState(GameState.GAME_OVER);
     }
 
     /*
-     * Changes the current game state.
+     * Changes the current game state to the specified new state.
      *
-     * @param newState the new game state.
+     * Compares the new game state with the current one. If they differ, the method updates the internal
+     * game state variable and then calls resourceRouter.changeGameState(newState) to ensure that the UI
+     * properly reflects the transition. This method centralizes state changes so that all necessary UI updates occur.
+     *
+     *
+     * @param newState the new GameState to set
      */
     private void changeGameState(final GameState newState)
     {
         if (!this.currentGameState.equals(newState))
         {
             this.currentGameState = newState;
-            resourceRouterMainMenu.changeGameState(newState);
+            resourceRouter.changeGameState(newState);
         }
     }
 
     /*
-     * Initializes the game loop timeline.
+     * Initializes the simulation game loop.
+     *
+     * Creates a Timeline that runs indefinitely. Constructs a KeyFrame with a duration specified by
+     * SIMULATION_TICK_DURATION_MS. The event handler for the KeyFrame calls updateSimulationTick(), which
+     * advances the simulation. This KeyFrame is then added to the Timeline.
+     *
      */
     private void initializeGameLoop()
     {
         gameLoop = new Timeline();
         gameLoop.setCycleCount(Animation.INDEFINITE);
 
-        final KeyFrame kf;
-        kf = new KeyFrame(Duration.millis(SIMULATION_TICK_DURATION_MS),
-        e -> updateSimulationTick());
+        final KeyFrame keyFrame;
+        keyFrame = new KeyFrame(Duration.millis(SIMULATION_TICK_DURATION_MS),
+                                _ -> updateSimulationTick());
 
-        gameLoop.getKeyFrames().add(kf);
+        gameLoop.getKeyFrames().add(keyFrame);
     }
 
     /*
      * Updates the simulation on each tick.
      *
-     * @param deltaTime the elapsed time in seconds since the last tick.
+     * This method is called at each KeyFrame of the Timeline. It performs the following steps:
+     *   Checks if the current game state is one that should be updated (i.e. PLAYING, LEVEL_COMPLETE,
+     *   or LEVEL_TRANSITION). If not, and if the Timeline is running, it stops the Timeline and returns.
+     *   If no current level manager is available, stops the Timeline and returns.
+     *
+     *   When in PLAYING state, decrements the level timer (timeRemaining) by DELTA_TIME,
+     *   and updates the timer display via resourceRouter.updateTimer(timeRemaining).
+     *
+     *   If the time remaining drops to zero or below, checks whether any SinkNode remains unsatisfied.
+     *   If so, stops the simulation with an appropriate failure message and sets the game state to LEVEL_COMPLETE.
+     *
+     *   If the simulation is running, increments the simulationTimeElapsed by DELTA_TIME and resets the busy flags
+     *   on all pipes.
+     *
+     *   Iterates over all game nodes, calling their update(DELTA_TIME, this) method.
+     *
+     *   If a SinkNode encounters an error (isErrorState returns true), stops the simulation and breaks out.
+     *
+     *   If the game state remains PLAYING, calls checkWinCondition() to see if win conditions are met.
+     *
      */
     private void updateSimulationTick()
     {
@@ -267,7 +319,7 @@ public final class GameController
         if (currentGameState.equals(GameState.PLAYING))
         {
             timeRemaining -= DELTA_TIME;
-            resourceRouterMainMenu.updateTimer(timeRemaining);
+            resourceRouter.updateTimer(timeRemaining);
 
             if (timeRemaining <= ZERO_DOUBLE)
             {
@@ -278,17 +330,17 @@ public final class GameController
                                            .anyMatch(s -> !s.isSatisfied());
                 if (notAllSatisfied)
                 {
-                    final String msg;
-                    msg = "Level " + (currentLevelIndex + SECOND_INDEX) +
-                          " Failed! (Time Out)";
+                    final String message;
+                    message = "Level " + (currentLevelIndex + SECOND_INDEX) +
+                                          " Failed! (Time Out)";
 
-                    stopSimulation(msg + SCORE_ZERO_STRING);
+                    stopSimulation(message + SCORE_ZERO_STRING);
                     changeGameState(GameState.LEVEL_COMPLETE);
                     return;
                 }
             }
         }
-        if (simulationRunning ||
+        if (simulationActive ||
             currentGameState.equals(GameState.LEVEL_COMPLETE))
         {
             simulationTimeElapsed += DELTA_TIME;
@@ -301,9 +353,9 @@ public final class GameController
                     node.update(DELTA_TIME, this);
 
                     if (currentGameState.equals(GameState.PLAYING) &&
-                       (node instanceof SinkNode sn && sn.isInErrorState()))
+                       (node instanceof SinkNode sn && sn.inErrorState()))
                     {
-                        stopSimulation("Sink Error (" + node.getId() + ")! Reset pipes (R).");
+                        stopSimulation("Sink Error (" + node.getNodeId() + ")! Reset pipes (R).");
                         break;
                     }
                 }
@@ -321,14 +373,18 @@ public final class GameController
     }
 
     /*
-     * Checks if all sinks are satisfied.
+     * Checks if all SinkNodes are satisfied.
      *
-     * @return true if all sinks are satisfied; false otherwise.
+     * Filters the gameNodes collection for SinkNode instances and verifies that each one meets its demand
+     * by invoking its isSatisfied() method. If every SinkNode is satisfied, calls recordLevelScore()
+     * to add the level score to the session, transitions the game state to LEVEL_COMPLETE,
+     * and updates UI button states.
+     *
      */
     private void checkWinCondition()
     {
         if (currentLevelManager == null ||
-           !simulationRunning)
+           !simulationActive)
         {
             return;
         }
@@ -342,12 +398,19 @@ public final class GameController
         {
             recordLevelScore();
             changeGameState(GameState.LEVEL_COMPLETE);
-            resourceRouterMainMenu.updateButtonStates(false, true);
+            resourceRouter.updateButtonStates(false, true);
         }
     }
 
     /*
-     * Records the level score based on simulation time and pipe penalty.
+     * Calculates and records the score for the current level.
+     *
+     * Computes the level score based on a formula that divides BASE_SCORE_PER_LEVEL by the product of the elapsed
+     * simulation time (ensuring a minimum value) and a penalty factor determined by the number of pipes.
+     * The final score is guaranteed to be no less than MIN_SCORE_PER_LEVEL.
+     * This score is added to currentSessionScore, and the UI is updated with both the new score
+     * display and a prompt message.
+     *
      */
     private void recordLevelScore()
     {
@@ -357,11 +420,11 @@ public final class GameController
             return;
         }
 
-        final int pipeCount;
-        final double timeElapsed;
-        final double penaltyFactor;
-        final double rawScore;
-        final int finalScore;
+        final int       pipeCount;
+        final double    timeElapsed;
+        final double    penaltyFactor;
+        final double    rawScore;
+        final int       finalScore;
 
         pipeCount       = pipes.size();
         timeElapsed     = simulationTimeElapsed;
@@ -371,9 +434,9 @@ public final class GameController
 
         currentSessionScore += finalScore;
 
-        resourceRouterMainMenu.updateScoreDisplay(currentSessionScore);
+        resourceRouter.updateScoreDisplay(currentSessionScore);
 
-        resourceRouterMainMenu.updatePrompt(
+        resourceRouter.updatePrompt(
                 "You beat the level and gained " +
                 finalScore +
                 " points! Proceed to the next level!"
@@ -383,8 +446,18 @@ public final class GameController
     /*
      * Loads a level internally based on the provided level number.
      *
-     * @param levelNumber the level number to load.
-     * @return true if the level is loaded successfully; false otherwise.
+     * The method performs the following steps:
+     *
+     * Changes the game state to LOADING and clears any existing level graphics and state.
+     * Attempts to load the level by calling LevelLoader.loadLevel(levelNumber). If successful, sets the
+     * currentLevelManager, updates the level display and prompt via resourceRouter, and instantiates level nodes.
+     * Initializes level-specific timers (timeRemaining, simulationTimeElapsed) and simulation flags.
+     * Updates UI elements accordingly and starts the game loop if not already running.
+     * If the level fails to load, resets the game state to MENU and returns false.
+     *
+     * @param levelNumber the level to load
+     * @return true if the level loads successfully; false otherwise
+     *
      */
     private boolean loadLevelInternal(final int levelNumber)
     {
@@ -398,24 +471,24 @@ public final class GameController
         if (levelManager != null)
         {
             currentLevelManager = levelManager;
-            resourceRouterMainMenu.updateLevelDisplay(currentLevelIndex + SECOND_INDEX);
-            resourceRouterMainMenu.updatePrompt(currentLevelManager.getPrompt());
+            resourceRouter.updateLevelDisplay(currentLevelIndex + SECOND_INDEX);
+            resourceRouter.updatePrompt(currentLevelManager.getPrompt());
 
             try
             {
                 instantiateLevelNodes();
                 timeRemaining           = currentLevelManager.getTimeLimitSeconds();
                 simulationTimeElapsed   = ZERO_DOUBLE;
-                simulationRunning       = false;
+                simulationActive        = false;
                 ticksSincePipeChange    = DEFAULT_VALUE;
 
-                resourceRouterMainMenu.updateTimer(timeRemaining);
-                resourceRouterMainMenu.updateStatus("Level " +
+                resourceRouter.updateTimer(timeRemaining);
+                resourceRouter.updateStatus("Level " +
                                                    (currentLevelIndex + SECOND_INDEX) +
                                                     " ready. Connect & start!");
                 changeGameState(GameState.PLAYING);
-                resourceRouterMainMenu.updateButtonStates(false,
-                                                          false);
+                resourceRouter.updateButtonStates(false,
+                                                  false);
 
                 if (gameLoop.getStatus() != Animation.Status.RUNNING)
                 {
@@ -425,21 +498,30 @@ public final class GameController
             }
             catch (final Exception e)
             {
-                System.err.println("Error instantiating level: " + e);
                 changeGameState(GameState.MENU);
                 return false;
             }
         }
         else
         {
-            System.err.println("Failed to load level " + levelNumber);
             changeGameState(GameState.MENU);
             return false;
         }
     }
 
     /*
-     * Instantiates nodes for the current level.
+     * Instantiates game nodes for the current level.
+     *
+     * Clears any existing game nodes, the node mapping, and pipe list. Then iterates through each NodeDefinition
+     * provided by the currentLevelManager.
+     *
+     * For each node definition:
+     * Ensures the node ID is unique by appending a numeric suffix if necessary.
+     * Creates a new NodeDefinition with the unique ID.
+     * Constructs a GameNode via NodeFactory.createNode(uniqueDefinition).
+     * Adds the created node to the gameNodes list and maps it in nodeMap.
+     * Initializes the node’s visuals by calling initializeVisuals() and adds them to the gamePane.
+     *
      */
     private void instantiateLevelNodes()
     {
@@ -457,7 +539,7 @@ public final class GameController
         for (final LevelManager.NodeDefinition def : currentLevelManager.getNodeDefinitions())
         {
             final String originalId;
-            originalId = def.getId();
+            originalId = def.getNodeId();
 
             String uniqueId;
             uniqueId = originalId;
@@ -475,16 +557,16 @@ public final class GameController
             final GameNode gn;
 
             uniqueDef = new LevelManager.NodeDefinition(
-                    def.getType(),
+                    def.getNodeType(),
                     uniqueId,
-                    def.getX(),
-                    def.getY(),
-                    def.getConfig());
+                    def.getXCoordinate(),
+                    def.getYCoordinate(),
+                    def.getConfiguration());
 
             gn = NodeFactory.createNode(uniqueDef);
 
             gameNodes.add(gn);
-            nodeMap.put(gn.getId(), gn);
+            nodeMap.put(gn.getNodeId(), gn);
 
             gn.initializeVisuals();
             gn.addToPane(gamePane);
@@ -492,7 +574,13 @@ public final class GameController
     }
 
     /*
-     * Clears pipe graphics: removes particle animations and visual elements.
+     * Clears all pipe graphics from the game.
+     *
+     * Iterates over all pipes, and for each pipe:
+     * Calls removeAllParticles() to remove active resource particle animations.
+     * Collects each pipe's line visual (if non-null and a Node) and removes them from the gamePane.
+     * Sets the line visual reference for each pipe to null.
+     *
      */
     private void clearPipeGraphics()
     {
@@ -514,7 +602,11 @@ public final class GameController
     }
 
     /*
-     * Clears the pipe state.
+     * Clears the state of all pipes.
+     *
+     * Invokes clearPipes() on every GameNode to disconnect any associated pipes, then clears the internal list
+     * of pipes maintained by the GameController.
+     *
      */
     private void clearPipeState()
     {
@@ -523,15 +615,21 @@ public final class GameController
     }
 
     /*
-     * Finds the game node associated with a connector visual.
+     * Finds a GameNode corresponding to a given connector visual.
      *
-     * @param cv the connector visual.
-     * @return the corresponding GameNode, or null if not found.
+     * Extracts the node ID from the provided connector visual (using the visual’s ID attribute)
+     * via getNodeIdFromConnectorVisual().
+     * Then, uses the extracted ID to look up and return the corresponding GameNode from the internal nodeMap.
+     * If the connector visual or the node ID is null, or if no matching node is found, returns null.
+     *
+     *
+     * @param connectorVisual the connector visual from which to extract the node ID
+     * @return the associated GameNode, or null if not found
      */
-    private GameNode findNodeByConnectorVisual(final Node cv)
+    private GameNode findNodeByConnectorVisual(final Node connectorVisual)
     {
         final String nodeId;
-        nodeId = getNodeIdFromConnectorVisual(cv);
+        nodeId = getNodeIdFromConnectorVisual(connectorVisual);
 
         final GameNode result;
 
@@ -547,7 +645,11 @@ public final class GameController
     }
 
     /**
-     * Clears level state: pipes, nodes, and the current level manager.
+     * Clears the current level state.
+     * <p>
+     * Removes all pipes, clears the list of game nodes and node mapping, and sets the current level manager to null.
+     * This method resets level-specific state, so the controller is ready to load a new level.
+     * </p>
      */
     public void clearLevelState()
     {
@@ -559,11 +661,17 @@ public final class GameController
 
     /**
      * Starts a new game session.
+     * <p>
+     * Resets the session score to zero and updates the score display. If available level numbers exist, shuffles them,
+     * selects up to the defined number of levels per session, sets these as the level sequence,
+     * resets the current level index, and then loads the first level.
+     * If no levels are available, sets the game state to MENU.
+     * </p>
      */
     public void startGameSession()
     {
         currentSessionScore = DEFAULT_VALUE;
-        resourceRouterMainMenu.updateScoreDisplay(DEFAULT_VALUE);
+        resourceRouter.updateScoreDisplay(DEFAULT_VALUE);
 
         if (availableLevelNumbers.isEmpty())
         {
@@ -572,10 +680,11 @@ public final class GameController
         }
 
         final List<Integer> shuffled;
+        final int           numLevels;
+
         shuffled = new ArrayList<>(availableLevelNumbers);
         Collections.shuffle(shuffled);
 
-        final int numLevels;
         numLevels = Math.min(LEVELS_PER_SESSION, shuffled.size());
 
         if (numLevels == DEFAULT_VALUE)
@@ -583,28 +692,33 @@ public final class GameController
             changeGameState(GameState.MENU);
             return;
         }
-        this.levelSequenceForSession    = shuffled.subList(DEFAULT_VALUE,
-                                                           numLevels);
-        this.currentLevelIndex          = INITIAL_LEVEL_INDEX;
+        this.levelSequence      = shuffled.subList(DEFAULT_VALUE,
+                                                   numLevels);
+        this.currentLevelIndex  = INITIAL_LEVEL_INDEX;
 
         loadNextLevel();
     }
 
     /**
      * Loads the next level in the session.
+     * <p>
+     * Increments the current level index and, if the level sequence contains a level corresponding to the new index,
+     * stops the current simulation and attempts to load the level using an internal level-loading method.
+     * If the level loads successfully, the game continues; otherwise, it handles the game over sequence.
+     * </p>
      */
     public void loadNextLevel()
     {
         stopSimulation("Loading next level");
         currentLevelIndex++;
 
-        if (levelSequenceForSession != null &&
-            currentLevelIndex < levelSequenceForSession.size())
+        if (levelSequence != null &&
+            currentLevelIndex < levelSequence.size())
         {
-            final int levelNum;
-            final boolean success;
+            final int       levelNum;
+            final boolean   success;
 
-            levelNum    = levelSequenceForSession.get(currentLevelIndex);
+            levelNum    = levelSequence.get(currentLevelIndex);
             success     = loadLevelInternal(levelNum);
 
             if (!success)
@@ -619,21 +733,32 @@ public final class GameController
     }
 
     /**
-     * Starts the simulation (resource flow) if conditions are met.
+     * Starts the simulation if conditions are met.
+     *
+     * <p>
+     * Conditions:
+     * <ul>
+     *   <li>Game state is {@code GameState.PLAYING}</li>
+     *   <li>Simulation is not already active</li>
+     *   <li>A valid level is loaded and time remaining is positive</li>
+     * </ul>
+     * If all conditions pass, the method updates the status, resets timers, starts the game loop if necessary,
+     * and updates the UI button states.
+     * </p>
      */
     public void startSimulation()
     {
         if (!currentGameState.equals(GameState.PLAYING) ||
-                simulationRunning ||
-                currentLevelManager == null ||
-                timeRemaining <= ZERO_DOUBLE)
+            simulationActive ||
+            currentLevelManager == null ||
+            timeRemaining <= ZERO_DOUBLE)
         {
             return;
         }
 
-        resourceRouterMainMenu.updateStatus("Simulation Running...");
+        resourceRouter.updateStatus("Simulation Running...");
 
-        simulationRunning       = true;
+        simulationActive        = true;
         simulationTimeElapsed   = ZERO_DOUBLE;
         ticksSincePipeChange    = DEFAULT_VALUE;
 
@@ -641,26 +766,31 @@ public final class GameController
         {
             gameLoop.play();
         }
-        resourceRouterMainMenu.updateButtonStates(true, false);
+        resourceRouter.updateButtonStates(true,
+                                          false);
     }
 
     /**
      * Stops the simulation.
+     * <p>
+     * Sets the simulationRunning flag to false. If the simulation was active, updates the UI with the provided reason.
+     * Updates button states based on whether the level is complete, and stops the game loop if it is currently running.
+     * </p>
      *
-     * @param reason the reason to display.
+     * @param reason a message explaining why the simulation is being stopped
      */
     public void stopSimulation(final String reason)
     {
         final boolean wasRunning;
-        wasRunning = simulationRunning;
-        simulationRunning = false;
+        wasRunning = simulationActive;
+        simulationActive = false;
 
         if (wasRunning)
         {
-            resourceRouterMainMenu.updateStatus(reason);
+            resourceRouter.updateStatus(reason);
         }
-        resourceRouterMainMenu.updateButtonStates(false,
-                                                  currentGameState.equals(GameState.LEVEL_COMPLETE));
+        resourceRouter.updateButtonStates(false,
+                                          currentGameState.equals(GameState.LEVEL_COMPLETE));
 
         if (gameLoop.getStatus() == Animation.Status.RUNNING)
         {
@@ -670,15 +800,21 @@ public final class GameController
 
     /**
      * Resets pipes after a failed attempt.
+     * <p>
+     * If the simulation is not running, clears all pipe graphics and state by calling
+     * methods to remove particles and disconnect pipes, resets each GameNode’s state
+     * (for processor, sink, and source nodes),
+     * resets the tick counter, updates the status prompt and button states, and ensures the game loop is playing.
+     * </p>
      */
     public void resetFailedAttemptPipes()
     {
         if (!currentGameState.equals(GameState.PLAYING) ||
-                                     simulationRunning)
+                simulationActive)
         {
-            if (simulationRunning)
+            if (simulationActive)
             {
-                resourceRouterMainMenu.updateStatus("Cannot reset while simulation is running.");
+                resourceRouter.updateStatus("Cannot reset while simulation is running.");
             }
             return;
         }
@@ -687,20 +823,20 @@ public final class GameController
         clearPipeState();
 
         gameNodes.stream()
-                .filter(n -> n instanceof ProcessorNode)
+                .filter(node -> node instanceof ProcessorNode)
                 .forEach(GameNode::resetState);
 
         gameNodes.stream()
-                .filter(n -> n instanceof SinkNode)
-                .forEach(n -> ((SinkNode) n).clearErrorStateOnly());
+                .filter(node -> node instanceof SinkNode)
+                .forEach(node -> ((SinkNode) node).clearErrorStateOnly());
 
         gameNodes.stream()
-                .filter(n -> n instanceof SourceNode)
+                .filter(node -> node instanceof SourceNode)
                 .forEach(GameNode::resetState);
 
         ticksSincePipeChange = DEFAULT_VALUE;
-        resourceRouterMainMenu.updateStatus("Pipes cleared. Rebuild & SIM!");
-        resourceRouterMainMenu.updateButtonStates(false, false);
+        resourceRouter.updateStatus("Pipes cleared. Rebuild & SIM!");
+        resourceRouter.updateButtonStates(false, false);
 
         if (gameLoop.getStatus() != Animation.Status.RUNNING)
         {
@@ -709,7 +845,12 @@ public final class GameController
     }
 
     /**
-     * Clears level graphics.
+     * Clears all level graphics.
+     * <p>
+     * If the current game state is not LEVEL_COMPLETE,
+     * clears pipe graphics by removing all pipe-related visual elements;
+     * then, for every game node, removes its visual components from the game pane.
+     * </p>
      */
     public void clearLevelGraphics()
     {
@@ -717,14 +858,69 @@ public final class GameController
         {
             clearPipeGraphics();
         }
-        gameNodes.forEach(gn -> gn.removeFromPane(gamePane));
+        gameNodes.forEach(gameNode -> gameNode.removeFromPane(gamePane));
     }
 
     /**
-     * Attempts to connect two nodes via their connector visuals.
+     * Attempts to establish a pipe connection between two nodes based on their visual connector representations.
      *
-     * @param startConnectorVisual the output connector visual.
-     * @param endConnectorVisual   the input connector visual.
+     * <p>
+     * The method first validates the following conditions:
+     * <ul>
+     *   <li>Neither {@code startConnectorVisual} nor {@code endConnectorVisual} is {@code null}.</li>
+     *   <li>The two connector visuals are distinct.</li>
+     *   <li>Corresponding game nodes for both visuals can be found via {@code findNodeByConnectorVisual()}.
+     *       If either node is not found, the connection is aborted and a status message is displayed.
+     *   </li>
+     *   <li>The game nodes must be different; connecting a node to itself is not allowed.</li>
+     *   <li>
+     *       The connectors must have the correct direction:
+     *       {@code startConnectorVisual} must be an output connector (verified by {@code isOutputConnector()}) and
+     *       {@code endConnectorVisual} must be an input connector (verified by {@code isInputConnector()}).
+     *   </li>
+     *   <li>
+     *       If the {@code endNode} is a sink node (an instance of {@code SinkNode}),
+     *       it should not exceed its limit of incoming pipes
+     *       (less than {@code MAX_OUTGOING_PIPES} allowed).
+     *   </li>
+     *   <li>
+     *       A check is performed to ensure that a pipe connection between these specific nodes does not already exist.
+     *   </li>
+     * </ul>
+     * </p>
+     *
+     * <p>
+     * If any of the above validations fail, the method updates the status via {@code resourceRouter.updateStatus()}
+     * with an appropriate error message and terminates the connection attempt.
+     * </p>
+     *
+     * <p>
+     * Upon successful validation, the following steps are executed:
+     * <ol>
+     *   <li>Calculate the center positions of the output connector from {@code startNode}
+     *   and the input connector from {@code endNode}.</li>
+     *   <li>Create a visual {@code Line} representing the pipe, setting its start and end
+     *   coordinates to these calculated positions.</li>
+     *   <li>Assign the line a unique identifier and apply the appropriate style class.</li>
+     *   <li>Instantiate a new {@link Pipe} object that encapsulates the connection between
+     *   {@code startNode} and {@code endNode}.</li>
+     *   <li>Add the new pipe to the internal collection of pipes and associate it with the start
+     *   and end nodes using their respective methods.</li>
+     *   <li>Add the line to the game pane for rendering, ensuring it is positioned behind other UI elements.</li>
+     *   <li>Update the status to indicate successful pipe creation.</li>
+     * </ol>
+     * </p>
+     *
+     * <p>
+     * In case an exception occurs during the pipe creation process,
+     * the method catches the exception, updates the status
+     * with an error message including the exception details, and prints the stack trace for debugging purposes.
+     * </p>
+     *
+     * @param startConnectorVisual the visual representation of the starting node's connector
+     *                             (expected to be an output connector)
+     * @param endConnectorVisual   the visual representation of the ending node's connector
+     *                             (expected to be an input connector)
      */
     public void attemptPipeConnection(final Node startConnectorVisual,
                                       final Node endConnectorVisual)
@@ -744,20 +940,20 @@ public final class GameController
 
         if (startNode == null || endNode == null)
         {
-            resourceRouterMainMenu.updateStatus("Connection Error: Node(s) not found");
+            resourceRouter.updateStatus("Connection Error: Node(s) not found");
             return;
         }
 
         if (startNode == endNode)
         {
-            resourceRouterMainMenu.updateStatus("Cannot connect node to itself");
+            resourceRouter.updateStatus("Cannot connect node to itself");
             return;
         }
 
         if (!(isOutputConnector(startConnectorVisual) &&
               isInputConnector(endConnectorVisual)))
         {
-            resourceRouterMainMenu.updateStatus("Invalid direction (Use OUT->IN)");
+            resourceRouter.updateStatus("Invalid direction (Use OUT->IN)");
             return;
         }
 
@@ -765,46 +961,50 @@ public final class GameController
         {
             if (endNode.getIncomingPipes().size() >= MAX_OUTGOING_PIPES)
             {
-                resourceRouterMainMenu.updateStatus("Sink node '" +
-                                                    endNode.getId() +
-                                                    "' already has two inputs.");
+                resourceRouter.updateStatus("Sink node '" +
+                                            endNode.getNodeId() +
+                                            "' already has two inputs.");
                 return;
             }
         }
 
         final boolean exists;
         exists = pipes.stream().anyMatch(p ->
-                     p.getStartNode().getId().equals(startNode.getId()) &&
-                     p.getEndNode().getId().equals(endNode.getId()));
+                     p.getStartNode().getNodeId().equals(startNode.getNodeId()) &&
+                     p.getEndNode().getNodeId().equals(endNode.getNodeId()));
 
         if (exists)
         {
-            resourceRouterMainMenu.updateStatus("Pipe already exists.");
+            resourceRouter.updateStatus("Pipe already exists.");
             return;
         }
         try
         {
-            final Point2D sp;
-            final Point2D ep;
-            final Line line;
-            final Pipe newPipe;
+            final Point2D   startPoint;
+            final Point2D   endPoint;
+            final Line      line;
+            final Pipe      newPipe;
 
-            sp = startNode.getOutputConnectorCenter();
-            ep = endNode.getInputConnectorCenter();
+            startPoint  = startNode.getOutputConnectorCenter();
+            endPoint    = endNode.getInputConnectorCenter();
 
             line = new Line();
-            line.setStartX(sp.getX());
-            line.setStartY(sp.getY());
-            line.setEndX(ep.getX());
-            line.setEndY(ep.getY());
+            line.setStartX(startPoint.getX());
+            line.setStartY(startPoint.getY());
+            line.setEndX(endPoint.getX());
+            line.setEndY(endPoint.getY());
 
-            sp.distance(ep);
+            startPoint.distance(endPoint);
 
-            line.setId(Pipe.PIPE_ID_PREFIX + startNode.getId() + "_" + endNode.getId());
-            line.getStyleClass().add(Pipe.BASE_STYLE_CLASS);
+            line.setId(Pipe.getPipeIdPrefix() +
+                               startNode.getNodeId() +
+                               "_" +
+                               endNode.getNodeId());
+            line.getStyleClass().add(Pipe.getPipeStyle());
             line.setMouseTransparent(false);
 
-            newPipe = new Pipe(startNode, endNode);
+            newPipe = new Pipe(startNode,
+                               endNode);
             newPipe.setLineVisual(line);
             pipes.add(newPipe);
 
@@ -812,226 +1012,264 @@ public final class GameController
             endNode.addIncomingPipe(newPipe);
             gamePane.getChildren().add(line);
             line.toBack();
-            resourceRouterMainMenu.updateStatus("Pipe created.");
+            resourceRouter.updateStatus("Pipe created.");
 
         }
         catch (final Exception ex)
         {
-            resourceRouterMainMenu.updateStatus("Pipe Creation Error! " + ex.getMessage());
+            resourceRouter.updateStatus("Pipe Creation Error! " + ex.getMessage());
             ex.printStackTrace();
         }
     }
 
     /**
-     * Removes a pipe based on its line visual.
+     * Removes a pipe using its visual representation.
+     * <p>
+     * If the simulation is not active and the provided line visual is non-null,
+     * searches the internal collection for a Pipe whose visual matches the provided one.
+     * If found, removes the pipe from the associated start and end nodes, from the internal
+     * list, and from the game pane. Updates the UI status with a success or error message.
+     * </p>
      *
-     * @param lineVis the line visual to remove.
+     * @param lineVis the Line visual representing the pipe to remove
      */
     public void removePipeByVisual(final Line lineVis)
     {
-        if (simulationRunning || lineVis == null)
+        if (simulationActive || lineVis == null)
         {
             return;
         }
 
         final Pipe pipe;
         pipe = pipes.stream()
-                    .filter(p -> p.getLineVisual() == lineVis)
+                    .filter(pipe1 -> pipe1.getLineVisual() == lineVis)
                     .findFirst()
                     .orElse(null);
 
         if (pipe != null)
         {
-            final GameNode sN;
-            final GameNode eN;
+            final GameNode startNode;
+            final GameNode endNode;
 
-            sN = pipe.getStartNode();
-            eN = pipe.getEndNode();
+            startNode   = pipe.getStartNode();
+            endNode     = pipe.getEndNode();
 
-            if (sN != null)
+            if (startNode != null)
             {
-                sN.removeOutgoingPipe(pipe);
+                startNode.removeOutgoingPipe(pipe);
             }
-            if (eN != null)
+            if (endNode != null)
             {
-                eN.removeIncomingPipe(pipe);
+                endNode.removeIncomingPipe(pipe);
             }
 
             pipes.remove(pipe);
             gamePane.getChildren().remove(lineVis);
-            resourceRouterMainMenu.updateStatus("Pipe removed.");
+            resourceRouter.updateStatus("Pipe removed.");
         }
         else
         {
-            resourceRouterMainMenu.updateStatus("Pipe removal error.");
+            resourceRouter.updateStatus("Pipe removal error.");
         }
     }
 
     /**
-     * Updates the visual state of the given pipe.
+     * Updates the visual state of the specified pipe.
+     * <pipe>
+     * If the given Pipe is not null, calls its updateVisualState() method to
+     * refresh its appearance based on its current state.
+     * </pipe>
      *
-     * @param p the pipe to update.
+     * @param pipe the Pipe whose visual state is to be updated
      */
-    public void updatePipeVisual(final Pipe p)
+    public void updatePipeVisual(final Pipe pipe)
     {
-        if (p != null)
+        if (pipe != null)
         {
-            p.updateVisualState();
+            pipe.updateVisualState();
         }
     }
 
     /**
-     * Returns the game node by its logical ID.
+     * Retrieves a GameNode by its logical identifier.
+     * <p>
+     * Looks up the internal node mapping (nodeMap) using the provided nodeId and returns the corresponding GameNode.
+     * </p>
      *
-     * @param id the node ID.
-     * @return the corresponding GameNode.
+     * @param nodeId the unique identifier of the node
+     * @return the GameNode associated with the given nodeId, or null if not found
      */
-    public GameNode getLogicalNodeById(final String id)
+    public GameNode getLogicalNodeById(final String nodeId)
     {
         final GameNode result;
-        result = nodeMap.get(id);
+        result = nodeMap.get(nodeId);
 
         return result;
     }
 
     /**
      * Extracts the node ID from a connector visual.
+     * <p>
+     * If the given connector visual and its ID attribute are non-null, this method locates the
+     * last occurrence of '-' in the ID and returns the substring that follows.
+     * If the extraction fails or the visual is null, returns null.
+     * </p>
      *
-     * @param cv the connector visual.
-     * @return the node ID, or null if not available.
+     * @param connectorVisual the connector visual node
+     * @return the extracted node ID, or null if extraction is unsuccessful
      */
-    public String getNodeIdFromConnectorVisual(final Node cv)
+    public String getNodeIdFromConnectorVisual(final Node connectorVisual)
     {
-        if (cv == null || cv.getId() == null)
+        if (connectorVisual == null || connectorVisual.getId() == null)
         {
             return null;
         }
 
-        final String vid;
-        final int idx;
+        final String nodeIdVisual;
+        final int nodeIndex;
 
-        vid = cv.getId();
-        idx = vid.lastIndexOf('-');
+        nodeIdVisual    = connectorVisual.getId();
+        nodeIndex       = nodeIdVisual.lastIndexOf('-');
 
-        if (idx > DEFAULT_VALUE &&
-            idx < vid.length() - SECOND_INDEX)
+        if (nodeIndex > DEFAULT_VALUE &&
+            nodeIndex < nodeIdVisual.length() - SECOND_INDEX)
         {
             final String result;
-            result = vid.substring(idx + SECOND_INDEX);
+            result = nodeIdVisual.substring(nodeIndex +
+                                            SECOND_INDEX);
             return result;
         }
         return null;
     }
 
     /**
-     * Checks if a visual node is a connector.
+     * Determines whether the specified visual node is a connector.
+     * <p>
+     * Checks that the node and its ID are non-null, and returns true if the
+     * ID starts with either the designated input or output connector prefixes.
+     * </p>
      *
-     * @param fx the visual node.
-     * @return true if it is a connector visual; false otherwise.
+     * @param checkNode the visual node to check
+     * @return true if the node is a connector visual; false otherwise
      */
-    public boolean isConnectorVisual(final Node fx)
+    public boolean isConnectorVisual(final Node checkNode)
     {
-        if (fx == null || fx.getId() == null)
+        if (checkNode == null ||
+            checkNode.getId() == null)
         {
             return false;
         }
 
         final boolean result;
 
-        result = fx.getId().startsWith(GameNode.NODE_ID_PREFIX_CONNECTOR_IN) ||
-                 fx.getId().startsWith(GameNode.NODE_ID_PREFIX_CONNECTOR_OUT);
+        result = checkNode.getId().startsWith(GameNode.getNodeIdPrefixConnectorIn()) ||
+                 checkNode.getId().startsWith(GameNode.getNodeIdPrefixConnectorOut());
 
         return result;
     }
 
     /**
-     * Checks if the specified game node is output capable.
+     * Checks if the provided GameNode is output capable.
+     * <p>
+     * Returns true if the node is an instance of either SourceNode or ProcessorNode,
+     * indicating that it can produce resources.
+     * </p>
      *
-     * @param n the game node.
-     * @return true if the node is a SourceNode or ProcessorNode; false otherwise.
+     * @param gameNode the GameNode to evaluate
+     * @return true if the node can output resources; false otherwise
      */
-    public boolean isOutputCapableNode(final GameNode n)
+    public boolean isOutputCapableNode(final GameNode gameNode)
     {
         final boolean result;
 
-        result = (n instanceof SourceNode ||
-                  n instanceof ProcessorNode);
+        result = (gameNode instanceof SourceNode ||
+                  gameNode instanceof ProcessorNode);
 
         return result;
     }
 
+
     /**
-     * Checks if the specified game node is input capable.
+     * Checks if the provided GameNode is input capable.
+     * <p>
+     * Returns true if the node is an instance of either ProcessorNode or SinkNode,
+     * indicating that it can receive resources.
+     * </p>
      *
-     * @param n the game node.
-     * @return true if the node is a ProcessorNode or SinkNode; false otherwise.
+     * @param gameNode the GameNode to evaluate
+     * @return true if the node can accept resources; false otherwise
      */
-    public boolean isInputCapableNode(final GameNode n)
+    public boolean isInputCapableNode(final GameNode gameNode)
     {
         final boolean result;
 
-        result = (n instanceof ProcessorNode ||
-                  n instanceof SinkNode);
+        result = (gameNode instanceof ProcessorNode ||
+                  gameNode instanceof SinkNode);
 
         return result;
     }
 
     /**
-     * Checks if the given node is an output connector.
+     * Determines whether the given visual node is an output connector.
+     * <p>
+     * Validates that the node and its ID are non-null, then checks if the ID starts with the output connector prefix
+     * (obtained via GameNode.getNodeIdPrefixConnectorOut()).
+     * Returns true if these conditions are met.
+     * </p>
      *
-     * @param fx the node to check.
-     * @return true if it is an output connector; false otherwise.
+     * @param nodeCheck the connector visual to check
+     * @return true if it is an output connector; false otherwise
      */
-    public boolean isOutputConnector(final Node fx)
+    public boolean isOutputConnector(final Node nodeCheck)
     {
         final boolean result;
-        result = fx != null &&
-                 fx.getId() != null &&
-                 fx.getId().startsWith(GameNode.NODE_ID_PREFIX_CONNECTOR_OUT);
+        result = nodeCheck != null &&
+                 nodeCheck.getId() != null &&
+                 nodeCheck.getId().startsWith(GameNode.getNodeIdPrefixConnectorOut());
 
         return result;
     }
 
     /**
-     * Checks if the given node is an input connector.
+     * Determines whether the given visual node is an input connector.
+     * <p>
+     * Validates that the node and its ID are non-null, then checks if the ID starts with the input connector prefix
+     * (obtained via GameNode.getNodeIdPrefixConnectorIn()). Returns true if these conditions are met.
+     * </p>
      *
-     * @param fx the node to check.
-     * @return true if it is an input connector; false otherwise.
+     * @param nodeCheck the connector visual to check
+     * @return true if it is an input connector; false otherwise
      */
-    public boolean isInputConnector(final Node fx)
+    public boolean isInputConnector(final Node nodeCheck)
     {
         final boolean result;
-        result = fx != null && fx.getId() != null &&
-                 fx.getId().startsWith(GameNode.NODE_ID_PREFIX_CONNECTOR_IN);
+        result = nodeCheck != null &&
+                 nodeCheck.getId() != null &&
+                 nodeCheck.getId().startsWith(GameNode.getNodeIdPrefixConnectorIn());
 
         return result;
     }
 
+
     /**
-     * Returns whether the simulation is running.
+     * Returns whether the simulation is currently running.
+     * <p>
+     * Simply returns the state of the internal simulationRunning flag.
+     * </p>
      *
-     * @return true if simulation is running; false otherwise.
+     * @return true if the simulation is active; false otherwise
      */
-    public boolean isSimulationRunning()
+    public boolean isSimulationActive()
     {
-        return simulationRunning;
+        return simulationActive;
     }
 
     /**
-     * Returns the current session score.
-     *
-     * @return the current session score.
-     */
-    public int getCurrentSessionScore()
-    {
-        final int result;
-        result = currentSessionScore;
-
-        return result;
-    }
-
-    /**
-     * Resets the game state by stopping simulation, clearing level graphics and state, and clearing the game pane.
+     * Resets the overall game state.
+     * <p>
+     * Stops the simulation, clears level graphics and state, and clears all game node visuals from the game pane,
+     * effectively resetting the controller to a fresh state.
+     * </p>
      */
     public void resetGameState()
     {
@@ -1042,42 +1280,32 @@ public final class GameController
     }
 
     /**
-     * Sets a unique ID for this controller.
-     * If the provided ID is already in use among the current nodes, a numeric suffix is appended until it is unique.
+     * Returns the current session score.
+     * <p>
+     * Provides the cumulative score for the current game session, as maintained by the controller.
+     * </p>
      *
-     * @param newId the candidate ID.
-     * @throws IllegalArgumentException if newId is null or empty.
+     * @return an integer representing the current session score
      */
-    public void setId(final String newId)
+    public int getCurrentSessionScore()
     {
-        if (newId == null || newId.trim().isEmpty())
-        {
-            throw new IllegalArgumentException("New ID cannot be null or empty.");
-        }
+        final int result;
+        result = currentSessionScore;
 
-        final String trimmed;
-        String uniqueId;
-
-        trimmed = newId.trim();
-        uniqueId = trimmed;
-
-        int suffix = SECOND_INDEX;
-
-        while (nodeMap.containsKey(uniqueId))
-        {
-            uniqueId = trimmed + "_" + suffix;
-            suffix++;
-        }
-        this.id = uniqueId;
+        return result;
     }
 
     /**
-     * Returns the unique ID for this controller.
+     * Returns the level sequence for the current session.
+     * <p>
+     * Provides an unmodifiable list of level numbers that indicates the order in
+     * which levels will be played during the session.
+     * </p>
      *
-     * @return the controller's ID.
+     * @return a List of Integer representing the level sequence
      */
-    public String getId()
+    public List<Integer> getLevelSequence()
     {
-        return id;
+        return levelSequence;
     }
 }

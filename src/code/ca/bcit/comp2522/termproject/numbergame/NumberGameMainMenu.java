@@ -15,7 +15,7 @@ import javafx.stage.Stage;
  * "Retro 20-Number Challenge" game. It extends the {@link javafx.application.Application}
  * class and provides the entry point for initializing and displaying the game's user interface.
  * <p>
- * This class creates a new {@link RetroNumberGame} instance which encapsulates the game logic,
+ * This class creates a new {@link NumberGame} instance which encapsulates the game logic,
  * and sets up the UI components including:
  * <ul>
  *   <li>A game pane that displays the game board</li>
@@ -25,7 +25,7 @@ import javafx.stage.Stage;
  * </p>
  * <p>
  * The {@link #start(Stage)} method initializes the primary stage by creating and combining these
- * UI elements, and then displays the stage. The private {@link #buildOverlayPane(RetroNumberGame, Stage)}
+ * UI elements, and then displays the stage. The private {@link #buildOverlayPane(NumberGame, Stage)}
  * method constructs the overlay pane and wires up the event handlers for starting a new game or closing
  * the current window.
  * </p>
@@ -53,21 +53,26 @@ public final class NumberGameMainMenu
     private static final int    sceneWidth          = 700;
 
     /*
-     * Builds and returns the overlay pane containing the game title and control buttons.
-     * <p>
-     * The overlay pane is composed of:
-     * <ul>
-     *   <li>A title label displaying "Retro 20-Number Challenge".</li>
-     *   <li>A "Start Game" button that hides the overlay and initiates a new game by calling game.startNewGame().</li>
-     *   <li>An "Exit" button that closes the primary stage, effectively closing the current game window.</li>
-     * </ul>
+     * Constructs and returns an overlay pane that contains the game title and the control buttons.
+     *
+     * The overlay pane is intended to be displayed on top of the game pane and includes:
+     *
+     *   A title label displaying the name of the game (i.e. gameTitle).
+     *   A "Start Game" button that, when pressed, hides the overlay and calls NumberGame#startNewGame()
+     *   to initialize a new game session.
+     *   An "Exit" button that closes the main application window via the provided primaryStage.
+     *
+     * The pane is organized using a vertical box layout VBox with spacing set to
+     * the value vboxAxis and is centered.
      * </p>
      *
-     * @param game         the RetroNumberGame instance controlling the game logic
-     * @param primaryStage the stage to be closed when the exit button is pressed
-     * @return a VBox containing the overlay UI elements
+     * @param game         an instance of NumberGame that provides the game logic and UI components.
+     * @param primaryStage the main application Stage that should be closed when the "Exit" button is pressed.
+     *
+     * @return a VBox containing the overlay components (title and control buttons).
+     *
      */
-    private VBox buildOverlayPane(final RetroNumberGame game,
+    private VBox buildOverlayPane(final NumberGame game,
                                   final Stage primaryStage)
     {
         final VBox      overlay;
@@ -98,15 +103,17 @@ public final class NumberGameMainMenu
     }
 
     /**
-     * Schedules the creation and display of a new Number Game window on the JavaFX Application Thread.
+     * Schedules the creation and display of a new game window on the JavaFX Application Thread.
      * <p>
-     * This method uses {@code Platform.runLater} to ensure that the creation of a new {@link NumberGameMainMenu}
-     * instance and the initialization of its UI occur on the JavaFX Application Thread. It creates a new {@link Stage}
-     * and passes it to the {@link NumberGameMainMenu#start(Stage)} method to display the game window.
-     * </p>
-     * <p>
-     * Any exceptions encountered during the initialization of the game window
-     * are caught and printed to the standard error stream.
+     * This static method uses {@link Platform#runLater(Runnable)} to ensure that all UI-related operations occur
+     * on the JavaFX Application Thread. Inside the runnable:
+     * <ul>
+     *   <li>A new {@link Stage} is created for the game window.</li>
+     *   <li>An instance of {@code NumberGameMainMenu} is created and its {@link #start(Stage)} method is called with
+     *       the new stage to initialize the game UI.</li>
+     *   <li>The stage is made visible, brought to the front, and given focus.</li>
+     * </ul>
+     * Any exceptions thrown during this process are caught, logged, and printed to the standard error stream.
      * </p>
      */
     public static void launchGame()
@@ -127,7 +134,6 @@ public final class NumberGameMainMenu
             }
             catch (final Exception e)
             {
-                System.out.println("Cannot launch game." + e.getMessage());
                 e.printStackTrace();
             }
         });
@@ -136,27 +142,34 @@ public final class NumberGameMainMenu
     /**
      * Initializes and displays the primary JavaFX stage for the Retro 20-Number Challenge game.
      * <p>
-     * This method creates a new {@link RetroNumberGame} instance and sets up its user interface by:
+     * This method performs the following tasks:
      * <ul>
-     *   <li>Creating a game pane containing the game board.</li>
-     *   <li>Building an overlay pane with the game title and control buttons.</li>
-     *   <li>Combining these panes into a scene and applying the CSS stylesheet if available.</li>
+     *   <li>Creates an instance of {@link NumberGame} which encapsulates the game board and logic.</li>
+     *   <li>Wraps the game UI in a {@link StackPane} to allow layering of UI components.</li>
+     *   <li>Builds an overlay pane (using {@link #buildOverlayPane(NumberGame, Stage)}) that contains the game title
+     *       and control buttons.</li>
+     *   <li>Creates a root {@link StackPane} and adds both the game pane and the overlay pane.
+     *   The overlay pane is placed on top so that it can intercept user input until a new game is started.</li>
+     *   <li>Sets up a {@link Scene} with dimensions defined by the constants {@code sceneWidth}
+     *       and {@code sceneHeight}, and attempts to load an external CSS file
+     *       (referenced by {@code cssFile}) for styling.</li>
+     *   <li>Sets the title of the primary stage to the game title and assigns the scene
+     *       to the stage before showing it.</li>
      * </ul>
-     * The primary stage's title is set and the stage is then displayed.
      * </p>
      *
-     * @param primaryStage the primary stage on which the game UI will be displayed
+     * @param primaryStage the primary {@link Stage} that serves as the main window for the application.
      */
     @Override
     public void start(final Stage primaryStage)
     {
-        final RetroNumberGame   game;
+        final NumberGame game;
         final StackPane         gamePane;
         final VBox              overlayPane;
         final StackPane         root;
         final Scene             scene;
 
-        game        = new RetroNumberGame();
+        game        = new NumberGame();
         gamePane    = new StackPane(game.getRootPane());
         overlayPane = buildOverlayPane(game, primaryStage);
         root        = new StackPane();
@@ -170,7 +183,8 @@ public final class NumberGameMainMenu
         }
         catch (final NullPointerException e)
         {
-            System.err.printf("Error: %s not found.", cssFile);
+            throw new IllegalArgumentException(
+                    "Error: %s not found." + cssFile);
         }
 
         primaryStage.setTitle(gameTitle);
