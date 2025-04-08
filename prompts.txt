@@ -35,7 +35,8 @@ Worst Parts:
 
 - Dependency on Detailed Prompts:
   While detailed prompts yielded better results, it also meant spending extra time crafting precise questions.
-  A slight vagueness would lead to less useful output, requiring multiple revisions to get the intended detail.
+  A slight vagueness would lead to less useful output, requiring multiple revisions to get the intended details
+  I needed to accomplish my task.
 
 ========================================================================
 Phase 2: Development
@@ -65,8 +66,9 @@ Worst Parts:
   my workflow and often led to delays, as I had to invest time in re-establishing context.
 
 - Poor Styling Suggestions:
-  Despite strict guidelines, the AI’s code styling suggestions were consistently poor. I ended up spending hours
-  manually fixing and optimizing the styling, which detracted from the development progress.
+  Despite strict guidelines, the AI’s code styling suggestions were consistently poor when trying to format my code.
+  I ended up spending hours manually fixing and optimizing the styling,
+  which detracted from the development progress.
 
 ========================================================================
 Phase 3: Testing, Debugging & Finalizing
@@ -126,12 +128,10 @@ Disadvantages:
 
 - Poor Code Styling: AI-generated styling suggestions were suboptimal, leading to significant manual rework.
 
-- Difficulty with Advanced Explanations: The AI struggled with deeper, nuanced explanations required
-  for advanced features.
-
 - Inconsistent UI Debugging: Its inability to effectively troubleshoot JavaFX issues was a major drawback.
 
 - Scope Creep: Over-reliance on AI for iterative suggestions sometimes expanded the project scope unnecessarily.
+  Everytime I would ask it for ideas for new features, it would define features that would take months to incorporate.
 
 - Increased Frustration: The combination of context loss and unreliable outputs occasionally hindered
   progress rather than helping it.
